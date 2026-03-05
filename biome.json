@@ -1,0 +1,76 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.4.5/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": false
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"complexity": {
+				"recommended": true,
+				"noExcessiveCognitiveComplexity": "error",
+				"noUselessStringConcat": "error",
+				"noUselessUndefinedInitialization": "error",
+				"useDateNow": "error",
+				"useSimplifiedLogicExpression": "error"
+			},
+			"correctness": {
+				"recommended": true,
+				"noUnusedFunctionParameters": "error",
+				"noUnusedImports": "error",
+				"noUnusedVariables": "error"
+			},
+			"performance": {
+				"recommended": true,
+				"noBarrelFile": "off",
+				"noReExportAll": "off"
+			},
+			"style": {
+				"recommended": true,
+				"noNonNullAssertion": "error",
+				"useCollapsedElseIf": "error",
+				"useConsistentBuiltinInstantiation": "error",
+				"useDefaultSwitchClause": "error",
+				"useExplicitLengthCheck": "error",
+				"useForOf": "error",
+				"useNamingConvention": "off",
+				"useShorthandAssign": "error",
+				"useThrowNewError": "error",
+				"useThrowOnlyError": "error",
+				"useAtIndex": "error",
+				"useCollapsedIf": "error",
+				"useConsistentArrowReturn": "error",
+				"noSubstr": "error"
+			},
+			"suspicious": {
+				"recommended": true,
+				"noExplicitAny": "error",
+				"noConsole": "off",
+				"useErrorMessage": "error"
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	}
+}

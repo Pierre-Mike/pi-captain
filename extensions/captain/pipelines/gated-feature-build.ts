@@ -4,20 +4,17 @@
 // - The full sequence is gated by `bun test`
 // Demonstrates parameterized gate factories and composition-level gates.
 // Agents: architect, frontend-dev, backend-dev, tester, reviewer (from ~/.pi/agent/agents/*.md)
-import type { Runnable } from "../types.js";
+
+import { bunTest, command, retry } from "../gates/index.js";
 import {
-  command, commandAll, outputIncludes,
-  bunTest, bunTypecheck, testAndTypecheck,
-  none, retry, skip,
-} from "../gates/index.js";
-import {
-  architecturePlan,
-  backendImplementation,
-  frontendImplementation,
-  testStrategy,
-  integrationTests,
-  codeReview,
+	architecturePlan,
+	backendImplementation,
+	codeReview,
+	frontendImplementation,
+	integrationTests,
+	testStrategy,
 } from "../steps/index.js";
+import type { Runnable } from "../types.js";
 
 /**
  * The pipeline spec — full feature build with composition gates.
@@ -34,38 +31,38 @@ import {
  *   └── step: Code Review
  */
 export const pipeline: Runnable = {
-  kind: "sequential",
-  steps: [
-    // Step 1: Architecture planning
-    architecturePlan,
+	kind: "sequential",
+	steps: [
+		// Step 1: Architecture planning
+		architecturePlan,
 
-    // Step 2: Parallel implementation — gated by typecheck
-    // If typecheck fails after merge, re-run all 3 branches
-    {
-      kind: "parallel",
-      steps: [
-        backendImplementation,
-        frontendImplementation,
-        {
-          kind: "pool",
-          step: testStrategy,
-          count: 2,
-          merge: { strategy: "rank" },
-        },
-      ],
-      merge: { strategy: "concat" },
-      gate: command("bunx tsc --noEmit"),   // ← parameterized gate factory
-      onFail: retry(2),                     // ← parameterized onFail factory
-    },
+		// Step 2: Parallel implementation — gated by typecheck
+		// If typecheck fails after merge, re-run all 3 branches
+		{
+			kind: "parallel",
+			steps: [
+				backendImplementation,
+				frontendImplementation,
+				{
+					kind: "pool",
+					step: testStrategy,
+					count: 2,
+					merge: { strategy: "rank" },
+				},
+			],
+			merge: { strategy: "concat" },
+			gate: command("bunx tsc --noEmit"), // ← parameterized gate factory
+			onFail: retry(2), // ← parameterized onFail factory
+		},
 
-    // Step 3: Integration testing
-    integrationTests,
+		// Step 3: Integration testing
+		integrationTests,
 
-    // Step 4: Code review
-    codeReview,
-  ],
+		// Step 4: Code review
+		codeReview,
+	],
 
-  // Gate the entire sequence — if tests fail after review, retry everything
-  gate: bunTest,        // ← preset constant (command("bun test"))
-  onFail: retry(2),
+	// Gate the entire sequence — if tests fail after review, retry everything
+	gate: bunTest, // ← preset constant (command("bun test"))
+	onFail: retry(2),
 };

@@ -9,27 +9,33 @@
 //   ├── step: Fix Bug
 //   └── step: Verify Fix (gate: bun test, retry 3)
 // Agents: tester, architect, backend-dev (from ~/.pi/agent/agents/*.md)
-import type { Runnable } from "../types.js";
+
 import { bunTest, retry } from "../gates/index.js";
-import { reproduceBug, diagnoseBug, fixBug, verifyFix } from "../steps/index.js";
+import {
+	diagnoseBug,
+	fixBug,
+	reproduceBug,
+	verifyFix,
+} from "../steps/index.js";
+import type { Runnable } from "../types.js";
 
 export const pipeline: Runnable = {
-  kind: "sequential",
-  steps: [
-    // 1. Reproduce the bug with a minimal test case
-    reproduceBug,
+	kind: "sequential",
+	steps: [
+		// 1. Reproduce the bug with a minimal test case
+		reproduceBug,
 
-    // 2. Trace the root cause from reproduction output
-    diagnoseBug,
+		// 2. Trace the root cause from reproduction output
+		diagnoseBug,
 
-    // 3. Apply the fix
-    fixBug,
+		// 3. Apply the fix
+		fixBug,
 
-    // 4. Verify the fix resolves the bug (has its own bun test gate)
-    verifyFix,
-  ],
+		// 4. Verify the fix resolves the bug (has its own bun test gate)
+		verifyFix,
+	],
 
-  // Sequence-level gate: full test suite must pass after all steps
-  gate: bunTest,
-  onFail: retry(2),
+	// Sequence-level gate: full test suite must pass after all steps
+	gate: bunTest,
+	onFail: retry(2),
 };

@@ -1,18 +1,19 @@
 // ── Step: Summarize ───────────────────────────────────────────────────────
 // Produces a clear, structured summary with actionable insights from research
-import type { Step } from "../types.js";
+
 import { outputMinLength, retry } from "../gates/index.js";
+import type { Step } from "../types.js";
 
 export const summarize: Step = {
-  kind: "step",
-  label: "Summarize",
-  agent: "summarizer",
-  description: "Produce a clear summary",
-  prompt:
-    "You are a summarization agent. Take these research findings and produce " +
-    "a clear, well-structured summary with actionable insights:\n\n$INPUT\n\n" +
-    "Original question: $ORIGINAL",
-  gate: outputMinLength(100),
-  onFail: retry(2),
-  transform: { kind: "full" },
+	kind: "step",
+	label: "Summarize",
+	agent: "summarizer",
+	description: "Produce a clear summary",
+	prompt:
+		"You are a summarization agent. Take these research findings and produce " +
+		"a clear, well-structured summary with actionable insights:\n\n$INPUT\n\n" +
+		"Original question: $ORIGINAL",
+	gate: outputMinLength(100),
+	onFail: retry(2),
+	transform: { kind: "full" },
 };

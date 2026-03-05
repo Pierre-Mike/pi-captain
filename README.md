@@ -76,6 +76,7 @@ pool        — Run same step N times, pick best
 # Clone and develop locally
 git clone git:github.com/YOUR-ORG/pi-captain
 cd pi-captain
+npm install          # installs deps + sets up Husky git hooks via `prepare`
 
 # Add as local package for development
 # In ~/.pi/agent/settings.json or .pi/settings.json:
@@ -83,6 +84,23 @@ cd pi-captain
 
 # Edit files, then /reload in pi to pick up changes
 ```
+
+### Scripts
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `npm run check` | `biome check extensions/ skills/` | Lint & format check (CI / pre-push) |
+| `npm run fix` | `biome check --write extensions/ skills/` | Auto-fix lint & format issues |
+| `npm run format` | `biome format --write extensions/ skills/` | Format only |
+
+### Git Hooks
+
+Git hooks are managed by [Husky](https://typicode.github.io/husky/) and run automatically after `npm install`.
+
+| Hook | What runs | Purpose |
+|------|-----------|---------|
+| **pre-commit** | `lint-staged` → `biome check --write` on staged `*.{ts,js,json}` | Auto-fix and gate staged files before commit |
+| **pre-push** | `npm run check` | Full lint & format check on the entire codebase before push |
 
 ## License
 

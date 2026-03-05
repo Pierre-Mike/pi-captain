@@ -14,37 +14,38 @@
 //   ├── step: Red Team Assessment ← adversarial analysis of merged findings
 //   └── step: Security Report (gate: file docs/security-audit.md, transform: summarize)
 // Agents: security-reviewer, red-team, synthesizer (from ~/.pi/agent/agents/*.md)
-import type { Runnable } from "../types.js";
+
 import {
-  dependencyScan,
-  owaspCheck,
-  secretScan,
-  authReview,
-  redTeamAssessment,
-  securityReport,
+	authReview,
+	dependencyScan,
+	owaspCheck,
+	redTeamAssessment,
+	secretScan,
+	securityReport,
 } from "../steps/index.js";
+import type { Runnable } from "../types.js";
 
 export const pipeline: Runnable = {
-  kind: "sequential",
-  steps: [
-    // 1. Scan dependencies for known vulnerabilities
-    dependencyScan,
+	kind: "sequential",
+	steps: [
+		// 1. Scan dependencies for known vulnerabilities
+		dependencyScan,
 
-    // 2. Three parallel security reviews covering different vectors
-    {
-      kind: "parallel",
-      steps: [
-        owaspCheck,     // OWASP Top 10 categories
-        secretScan,     // Hardcoded secrets and credentials
-        authReview,     // Authentication & authorization deep dive
-      ],
-      merge: { strategy: "concat" },
-    },
+		// 2. Three parallel security reviews covering different vectors
+		{
+			kind: "parallel",
+			steps: [
+				owaspCheck, // OWASP Top 10 categories
+				secretScan, // Hardcoded secrets and credentials
+				authReview, // Authentication & authorization deep dive
+			],
+			merge: { strategy: "concat" },
+		},
 
-    // 3. Red team: adversarial review of all findings, looking for exploit chains
-    redTeamAssessment,
+		// 3. Red team: adversarial review of all findings, looking for exploit chains
+		redTeamAssessment,
 
-    // 4. Final executive report
-    securityReport,
-  ],
+		// 4. Final executive report
+		securityReport,
+	],
 };

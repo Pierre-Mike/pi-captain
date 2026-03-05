@@ -11,37 +11,35 @@
 //   │   └── step: Write Regression Tests (gate: bun test)
 //   └── step: Code Review (transform: summarize)
 // Agents: architect, backend-dev, tester, reviewer (from ~/.pi/agent/agents/*.md)
-import type { Runnable } from "../types.js";
-import { testAndTypecheck, retry } from "../gates/index.js";
+
+import { retry, testAndTypecheck } from "../gates/index.js";
 import {
-  analyzeCodebase,
-  refactorCode,
-  writeRegressionTests,
-  codeReview,
+	analyzeCodebase,
+	codeReview,
+	refactorCode,
+	writeRegressionTests,
 } from "../steps/index.js";
+import type { Runnable } from "../types.js";
 
 export const pipeline: Runnable = {
-  kind: "sequential",
-  steps: [
-    // 1. Deep analysis of current code and refactoring plan
-    analyzeCodebase,
+	kind: "sequential",
+	steps: [
+		// 1. Deep analysis of current code and refactoring plan
+		analyzeCodebase,
 
-    // 2. Parallel: refactor code + write regression tests simultaneously
-    // Both branches receive the analysis as $INPUT
-    {
-      kind: "parallel",
-      steps: [
-        refactorCode,
-        writeRegressionTests,
-      ],
-      merge: { strategy: "awaitAll" },
-    },
+		// 2. Parallel: refactor code + write regression tests simultaneously
+		// Both branches receive the analysis as $INPUT
+		{
+			kind: "parallel",
+			steps: [refactorCode, writeRegressionTests],
+			merge: { strategy: "awaitAll" },
+		},
 
-    // 3. Final code review of refactored code
-    codeReview,
-  ],
+		// 3. Final code review of refactored code
+		codeReview,
+	],
 
-  // Sequence-level gate: tests must pass AND TypeScript must compile
-  gate: testAndTypecheck,
-  onFail: retry(2),
+	// Sequence-level gate: tests must pass AND TypeScript must compile
+	gate: testAndTypecheck,
+	onFail: retry(2),
 };

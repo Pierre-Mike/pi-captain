@@ -1,18 +1,40 @@
 {
-  "name": "pi-captain",
-  "version": "0.1.0",
-  "description": "Captain — multi-agent pipeline orchestrator for pi. Define specialized agents, wire them into sequential/parallel/pool pipelines with quality gates, and run complex workflows.",
-  "keywords": ["pi-package"],
-  "license": "MIT",
-  "peerDependencies": {
-    "@mariozechner/pi-coding-agent": "*",
-    "@mariozechner/pi-ai": "*",
-    "@mariozechner/pi-agent-core": "*",
-    "@mariozechner/pi-tui": "*",
-    "@sinclair/typebox": "*"
-  },
-  "pi": {
-    "extensions": ["./extensions"],
-    "skills": ["./skills"]
-  }
+	"name": "pi-captain",
+	"version": "0.1.0",
+	"description": "Captain — multi-agent pipeline orchestrator for pi. Define specialized agents, wire them into sequential/parallel/pool pipelines with quality gates, and run complex workflows.",
+	"keywords": [
+		"pi-package"
+	],
+	"license": "MIT",
+	"scripts": {
+		"check": "biome check extensions/ skills/",
+		"fix": "biome check --write extensions/ skills/",
+		"format": "biome format --write extensions/ skills/",
+		"prepare": "husky"
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-agent-core": "*",
+		"@mariozechner/pi-ai": "*",
+		"@mariozechner/pi-coding-agent": "*",
+		"@mariozechner/pi-tui": "*",
+		"@sinclair/typebox": "*"
+	},
+	"pi": {
+		"extensions": [
+			"./extensions"
+		],
+		"skills": [
+			"./skills"
+		]
+	},
+	"lint-staged": {
+		"*.{ts,js,json}": [
+			"biome check --write --no-errors-on-unmatched"
+		]
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.5",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.3.2"
+	}
 }

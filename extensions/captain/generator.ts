@@ -3,8 +3,9 @@
 // The LLM receives a structured context of everything available and produces a
 // valid pipeline spec that's immediately registered and runnable.
 
+import type { Api, Model } from "@mariozechner/pi-ai";
 import { complete } from "@mariozechner/pi-ai";
-import type { Agent, Runnable, Gate, OnFail, Step } from "./types.js";
+import type { Agent, Runnable } from "./types.js";
 
 // ── Gate & OnFail Catalogs ────────────────────────────────────────────────
 // Human-readable descriptions so the LLM knows what's available
@@ -119,17 +120,19 @@ const RUNNABLE_SPEC = `
 
 /** Build a structured prompt with all context for the LLM to generate a pipeline */
 export function buildGeneratorPrompt(
-  userGoal: string,
-  agents: Record<string, Agent>,
+	userGoal: string,
+	agents: Record<string, Agent>,
 ): string {
-  // Format available agents
-  const agentLines = Object.values(agents).map(a => {
-    const src = a.source === "md" ? "📄" : "⚡";
-    const model = a.model ? ` model:${a.model}` : "";
-    return `- ${src} ${a.name}: ${a.description} (tools: ${a.tools.join(", ")}${model})`;
-  }).join("\n");
+	// Format available agents
+	const agentLines = Object.values(agents)
+		.map((a) => {
+			const src = a.source === "md" ? "📄" : "⚡";
+			const model = a.model ? ` model:${a.model}` : "";
+			return `- ${src} ${a.name}: ${a.description} (tools: ${a.tools.join(", ")}${model})`;
+		})
+		.join("\n");
 
-  return `You are a pipeline architect for the Captain orchestration system.
+	return `You are a pipeline architect for the Captain orchestration system.
 Your job is to generate a complete, executable pipeline spec based on the user's goal.
 
 ## Available Agents
@@ -169,136 +172,179 @@ ${userGoal}`;
 // ── Parse & Validate ──────────────────────────────────────────────────────
 
 export interface GeneratedPipeline {
-  name: string;
-  description: string;
-  pipeline: Runnable;
+	name: string;
+	description: string;
+	pipeline: Runnable;
 }
 
 /** Parse and validate the LLM's output into a GeneratedPipeline */
 export function parseGeneratedPipeline(
-  raw: string,
-  availableAgents: Record<string, Agent>,
+	raw: string,
+	availableAgents: Record<string, Agent>,
 ): GeneratedPipeline {
-  // Strip markdown code fences if present (LLM sometimes wraps in ```json)
-  let cleaned = raw.trim();
-  const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenceMatch) cleaned = fenceMatch[1]!.trim();
+	// Strip markdown code fences if present (LLM sometimes wraps in ```json)
+	let cleaned = raw.trim();
+	const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+	if (fenceMatch) cleaned = fenceMatch[1]?.trim();
 
-  let parsed: any;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch (e) {
-    throw new Error(`LLM output is not valid JSON: ${(e as Error).message}\n\nRaw output:\n${raw.slice(0, 500)}`);
-  }
+	let parsed: Record<string, unknown>;
+	try {
+		parsed = JSON.parse(cleaned) as Record<string, unknown>;
+	} catch (e) {
+		throw new Error(
+			`LLM output is not valid JSON: ${(e as Error).message}\n\nRaw output:\n${raw.slice(0, 500)}`,
+		);
+	}
 
-  if (!parsed.name || typeof parsed.name !== "string") {
-    throw new Error("Generated pipeline missing 'name' field");
-  }
-  if (!parsed.pipeline || !parsed.pipeline.kind) {
-    throw new Error("Generated pipeline missing 'pipeline' with 'kind' field");
-  }
+	if (!parsed.name || typeof parsed.name !== "string") {
+		throw new Error("Generated pipeline missing 'name' field");
+	}
+	const pipeline = parsed.pipeline as Record<string, unknown> | undefined;
+	if (!pipeline?.kind) {
+		throw new Error("Generated pipeline missing 'pipeline' with 'kind' field");
+	}
 
-  // Validate all agent references exist
-  const unknownAgents = collectAgentRefs(parsed.pipeline).filter(n => !availableAgents[n]);
-  if (unknownAgents.length > 0) {
-    throw new Error(`Generated pipeline references unknown agent(s): ${unknownAgents.join(", ")}`);
-  }
+	// Validate all agent references exist
+	const unknownAgents = collectAgentRefs(pipeline).filter(
+		(n) => !availableAgents[n],
+	);
+	if (unknownAgents.length > 0) {
+		throw new Error(
+			`Generated pipeline references unknown agent(s): ${unknownAgents.join(", ")}`,
+		);
+	}
 
-  // Validate runnable structure (basic recursive check)
-  validateRunnable(parsed.pipeline);
+	// Validate runnable structure (basic recursive check)
+	validateRunnable(pipeline);
 
-  return {
-    name: parsed.name,
-    description: parsed.description ?? "",
-    pipeline: parsed.pipeline as Runnable,
-  };
+	return {
+		name: parsed.name as string,
+		description: (parsed.description as string) ?? "",
+		pipeline: pipeline as unknown as Runnable,
+	};
+}
+
+/** Unvalidated runnable shape from LLM output */
+interface RawRunnable {
+	kind?: string;
+	label?: string;
+	agent?: string;
+	prompt?: string;
+	gate?: Record<string, unknown>;
+	onFail?: Record<string, unknown>;
+	transform?: Record<string, unknown>;
+	description?: string;
+	step?: RawRunnable;
+	steps?: RawRunnable[];
+	count?: number;
+	merge?: Record<string, unknown>;
+}
+
+/** Validate step-kind runnable fields and apply defaults */
+function validateStep(r: RawRunnable, path: string): void {
+	if (!r.label) throw new Error(`Step at ${path} missing 'label'`);
+	if (!r.agent) throw new Error(`Step at ${path} missing 'agent'`);
+	if (!r.prompt) throw new Error(`Step at ${path} missing 'prompt'`);
+	if (!r.gate) r.gate = { type: "none" };
+	if (!r.onFail) r.onFail = { action: "skip" };
+	if (!r.transform) r.transform = { kind: "full" };
+	if (!r.description) r.description = r.label;
+}
+
+/** Validate steps array and recurse */
+function validateStepsArray(
+	steps: RawRunnable[] | undefined,
+	kind: string,
+	path: string,
+): void {
+	if (!Array.isArray(steps) || steps.length === 0) {
+		throw new Error(`${kind} at ${path} must have non-empty 'steps' array`);
+	}
+	for (let i = 0; i < steps.length; i++) {
+		validateRunnable(steps[i], `${path}.steps[${i}]`);
+	}
 }
 
 /** Recursively validate a Runnable tree has required fields */
-function validateRunnable(r: any, path = "root"): void {
-  if (!r || !r.kind) {
-    throw new Error(`Invalid runnable at ${path}: missing 'kind'`);
-  }
+function validateRunnable(r: RawRunnable, path = "root"): void {
+	if (!r?.kind) {
+		throw new Error(`Invalid runnable at ${path}: missing 'kind'`);
+	}
 
-  switch (r.kind) {
-    case "step":
-      if (!r.label) throw new Error(`Step at ${path} missing 'label'`);
-      if (!r.agent) throw new Error(`Step at ${path} missing 'agent'`);
-      if (!r.prompt) throw new Error(`Step at ${path} missing 'prompt'`);
-      // Ensure gate and onFail have defaults
-      if (!r.gate) r.gate = { type: "none" };
-      if (!r.onFail) r.onFail = { action: "skip" };
-      if (!r.transform) r.transform = { kind: "full" };
-      if (!r.description) r.description = r.label;
-      break;
+	switch (r.kind) {
+		case "step":
+			validateStep(r, path);
+			break;
 
-    case "sequential":
-      if (!Array.isArray(r.steps) || r.steps.length === 0) {
-        throw new Error(`Sequential at ${path} must have non-empty 'steps' array`);
-      }
-      r.steps.forEach((s: any, i: number) => validateRunnable(s, `${path}.steps[${i}]`));
-      break;
+		case "sequential":
+			validateStepsArray(r.steps, "Sequential", path);
+			break;
 
-    case "pool":
-      if (!r.step) throw new Error(`Pool at ${path} missing 'step'`);
-      if (!r.count || r.count < 1) throw new Error(`Pool at ${path} needs count >= 1`);
-      if (!r.merge) r.merge = { strategy: "concat" };
-      validateRunnable(r.step, `${path}.step`);
-      break;
+		case "pool":
+			if (!r.step) throw new Error(`Pool at ${path} missing 'step'`);
+			if (!r.count || r.count < 1)
+				throw new Error(`Pool at ${path} needs count >= 1`);
+			if (!r.merge) r.merge = { strategy: "concat" };
+			validateRunnable(r.step, `${path}.step`);
+			break;
 
-    case "parallel":
-      if (!Array.isArray(r.steps) || r.steps.length === 0) {
-        throw new Error(`Parallel at ${path} must have non-empty 'steps' array`);
-      }
-      if (!r.merge) r.merge = { strategy: "concat" };
-      r.steps.forEach((s: any, i: number) => validateRunnable(s, `${path}.steps[${i}]`));
-      break;
+		case "parallel":
+			validateStepsArray(r.steps, "Parallel", path);
+			if (!r.merge) r.merge = { strategy: "concat" };
+			break;
 
-    default:
-      throw new Error(`Unknown runnable kind "${r.kind}" at ${path}`);
-  }
+		default:
+			throw new Error(`Unknown runnable kind "${r.kind}" at ${path}`);
+	}
 }
 
 /** Recursively collect agent names from a runnable tree */
-function collectAgentRefs(r: any): string[] {
-  if (!r || !r.kind) return [];
-  switch (r.kind) {
-    case "step": return [r.agent];
-    case "sequential": return (r.steps || []).flatMap(collectAgentRefs);
-    case "pool": return collectAgentRefs(r.step);
-    case "parallel": return (r.steps || []).flatMap(collectAgentRefs);
-    default: return [];
-  }
+function collectAgentRefs(r: RawRunnable): string[] {
+	if (!r?.kind) return [];
+	switch (r.kind) {
+		case "step":
+			return r.agent ? [r.agent] : [];
+		case "sequential":
+			return (r.steps ?? []).flatMap(collectAgentRefs);
+		case "pool":
+			return r.step ? collectAgentRefs(r.step) : [];
+		case "parallel":
+			return (r.steps ?? []).flatMap(collectAgentRefs);
+		default:
+			return [];
+	}
 }
 
 // ── Generate Pipeline via LLM ─────────────────────────────────────────────
 
 /** Call the LLM to generate a pipeline, parse, validate, and return it */
 export async function generatePipeline(
-  userGoal: string,
-  agents: Record<string, Agent>,
-  model: any,
-  apiKey: string,
-  signal?: AbortSignal,
+	userGoal: string,
+	agents: Record<string, Agent>,
+	model: Model<Api>,
+	apiKey: string,
+	signal?: AbortSignal,
 ): Promise<GeneratedPipeline> {
-  const prompt = buildGeneratorPrompt(userGoal, agents);
+	const prompt = buildGeneratorPrompt(userGoal, agents);
 
-  const response = await complete(
-    model,
-    {
-      messages: [{
-        role: "user",
-        content: [{ type: "text", text: prompt }],
-        timestamp: Date.now(),
-      }],
-    },
-    { apiKey, maxTokens: 4096, signal },
-  );
+	const response = await complete(
+		model,
+		{
+			messages: [
+				{
+					role: "user",
+					content: [{ type: "text", text: prompt }],
+					timestamp: Date.now(),
+				},
+			],
+		},
+		{ apiKey, maxTokens: 4096, signal },
+	);
 
-  const raw = response.content
-    .filter((c): c is { type: "text"; text: string } => c.type === "text")
-    .map(c => c.text)
-    .join("\n");
+	const raw = response.content
+		.filter((c): c is { type: "text"; text: string } => c.type === "text")
+		.map((c) => c.text)
+		.join("\n");
 
-  return parseGeneratedPipeline(raw, agents);
+	return parseGeneratedPipeline(raw, agents);
 }

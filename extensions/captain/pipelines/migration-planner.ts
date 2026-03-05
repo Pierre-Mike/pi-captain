@@ -10,29 +10,30 @@
 //   │   └── step: Migration Strategy (outputMinLength 300, retry 2)
 //   └── step: Risk Assessment (transform: summarize)
 // Agents: architect, planner, plan-reviewer (from ~/.pi/agent/agents/*.md)
-import type { Runnable } from "../types.js";
+
 import {
-  auditDependencies,
-  migrationStrategy,
-  riskAssessment,
+	auditDependencies,
+	migrationStrategy,
+	riskAssessment,
 } from "../steps/index.js";
+import type { Runnable } from "../types.js";
 
 export const pipeline: Runnable = {
-  kind: "sequential",
-  steps: [
-    // 1. Audit current state of dependencies
-    auditDependencies,
+	kind: "sequential",
+	steps: [
+		// 1. Audit current state of dependencies
+		auditDependencies,
 
-    // 2. Pool: 3 agents each propose a different migration strategy
-    // Vote merge selects the consensus best approach
-    {
-      kind: "pool",
-      step: migrationStrategy,
-      count: 3,
-      merge: { strategy: "vote" },
-    },
+		// 2. Pool: 3 agents each propose a different migration strategy
+		// Vote merge selects the consensus best approach
+		{
+			kind: "pool",
+			step: migrationStrategy,
+			count: 3,
+			merge: { strategy: "vote" },
+		},
 
-    // 3. Risk assessment on the voted-best strategy
-    riskAssessment,
-  ],
+		// 3. Risk assessment on the voted-best strategy
+		riskAssessment,
+	],
 };
