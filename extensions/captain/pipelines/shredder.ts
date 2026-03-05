@@ -1,4 +1,4 @@
-// ── Pipeline: Shrinker ───────────────────────────────────────────────────
+// ── Pipeline: Shredder ───────────────────────────────────────────────────
 // Takes any requirement → clarifies → decomposes → shrinks to Haiku-safe
 // units → validates with Flash dry-run → resolves dependency graph into
 // parallelizable execution layers → outputs a structured task tree →

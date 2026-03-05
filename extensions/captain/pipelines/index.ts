@@ -14,5 +14,5 @@ export * as refactorAndVerify from "./refactor-and-verify.js";
 // ── Original pipelines ───────────────────────────────────────────────────
 export * as researchAndSummarize from "./research-and-summarize.js";
 export * as securityAudit from "./security-audit.js";
-export * as shrinker from "./shrinker.js";
+export * as shredder from "./shredder.js";
 export * as testCoverageBoost from "./test-coverage-boost.js";

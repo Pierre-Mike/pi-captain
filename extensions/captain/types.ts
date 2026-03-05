@@ -20,7 +20,7 @@ export type KnownAgent =
 	| "reviewer"
 	| "scout"
 	| "security-reviewer"
-	| "shrinker"
+	| "shredder"
 	| "summarizer"
 	| "synthesizer"
 	| "tester"
