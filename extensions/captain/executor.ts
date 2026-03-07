@@ -307,6 +307,9 @@ async function executeStep(
 
 // ── Shared Gate + OnFail for Composition Nodes ────────────────────────────
 
+// OnFail coverage in gateCheck (container-level gate failures — sequential, pool, parallel):
+// retry ✓  retryWithDelay ✓  skip ✓  warn ✓  fallback ✓
+// All five actions from types.ts OnFail union are handled below.
 async function gateCheck(
 	output: string,
 	results: StepResult[],
@@ -635,6 +638,9 @@ async function applyTransform(
 	}
 }
 
+// OnFail coverage in handleFailure (step-level gate failures):
+// retry ✓  retryWithDelay ✓  skip ✓  warn ✓  fallback ✓
+// All five actions from types.ts OnFail union are handled below.
 async function handleFailure(
 	step: Step,
 	input: string,

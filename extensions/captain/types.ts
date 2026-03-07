@@ -128,19 +128,9 @@ export interface Step {
 	description?: string;
 	prompt: string; // supports $INPUT, $ORIGINAL interpolation
 
-	/**
-	 * Max agent turns before stopping (default: unlimited).
-	 * Declared intent — will map to `pi --print --max-turns N` once supported.
-	 * Tracking: https://github.com/badlogic/pi-mono/issues/1898
-	 */
-	maxTurns?: number;
-
-	/**
-	 * Max output tokens per step (default: unlimited).
-	 * Declared intent — will map to `pi --print --max-tokens N` once supported.
-	 * Tracking: https://github.com/badlogic/pi-mono/issues/1898
-	 */
-	maxTokens?: number;
+	// Note: to limit step execution, configure model-level or pipeline-level controls.
+	// maxTurns / maxTokens were removed — they were declared but never enforced,
+	// which was misleading to users. Add back when the SDK supports them natively.
 
 	gate: Gate;
 	onFail: OnFail;
