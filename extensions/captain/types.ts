@@ -200,6 +200,8 @@ export interface PipelineState {
 	spec: Runnable;
 	status: "idle" | "running" | "completed" | "failed";
 	results: StepResult[];
+	currentStep?: string; // label of the step currently executing
+	currentStepStream?: string; // accumulated text stream of the running step
 	startTime?: number;
 	endTime?: number;
 	finalOutput?: string;

@@ -59,6 +59,8 @@ export interface ExecutorContext {
 	signal?: AbortSignal;
 	onStepStart?: (label: string) => void;
 	onStepEnd?: (result: StepResult) => void;
+	/** Called with the accumulated text output as each delta arrives */
+	onStepStream?: (text: string) => void;
 	pipelineName: string;
 }
 
@@ -223,6 +225,7 @@ async function runStepCore(
 			event.assistantMessageEvent.type === "text_delta"
 		) {
 			output += event.assistantMessageEvent.delta;
+			ectx.onStepStream?.(output);
 		}
 	});
 
