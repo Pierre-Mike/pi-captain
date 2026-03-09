@@ -189,10 +189,47 @@ export class CaptainState {
 		return { name, agentCount: agentEntries.length, spec: data.pipeline };
 	}
 
+	async loadTsPipelineFile(filePath: string): Promise<{
+		name: string;
+		agentCount: number;
+		spec: Runnable;
+		source: string;
+	}> {
+		// Dynamic import — bun resolves .ts natively at runtime
+		const mod = await import(filePath);
+		const pipeline: Runnable = mod.pipeline ?? mod.default?.pipeline;
+		if (!pipeline?.kind) {
+			throw new Error(
+				`Invalid TypeScript pipeline file: "${filePath}" must export a "pipeline" const of type Runnable`,
+			);
+		}
+		const agents: Record<string, Agent> =
+			mod.agents ?? mod.default?.agents ?? {};
+		const agentEntries = Object.entries(agents);
+		for (const [key, agent] of agentEntries) {
+			this.agents[key] = { ...agent, name: key as AgentName };
+		}
+		const ext = filePath.endsWith(".ts") ? ".ts" : ".js";
+		const name = basename(filePath, ext);
+		this.pipelines[name] = { spec: pipeline };
+		return {
+			name,
+			agentCount: agentEntries.length,
+			spec: pipeline,
+			source: filePath,
+		};
+	}
+
 	resolvePreset(
 		name: string,
 		cwd: string,
 	):
+		| Promise<{
+				name: string;
+				agentCount: number;
+				spec: Runnable;
+				source?: string;
+		  }>
 		| { name: string; agentCount: number; spec: Runnable; source?: string }
 		| undefined {
 		if (this.builtinPresetMap[name]) return this.loadBuiltinPreset(name);
@@ -203,11 +240,12 @@ export class CaptainState {
 			: existsSync(name)
 				? resolve(name)
 				: undefined;
-		if (filePath) {
-			const result = this.loadPipelineFile(filePath);
-			return { ...result, source: filePath };
+		if (!filePath) return undefined;
+
+		if (filePath.endsWith(".ts") || filePath.endsWith(".js")) {
+			return this.loadTsPipelineFile(filePath);
 		}
-		return undefined;
+		return { ...this.loadPipelineFile(filePath), source: filePath };
 	}
 
 	// ── Session Reconstruction ────────────────────────────────────────────
@@ -215,7 +253,21 @@ export class CaptainState {
 	private applyCaptainDetails(d: CaptainDetails): void {
 		this.pipelines = d.pipelines ?? this.pipelines;
 		this.agents = d.agents ?? this.agents;
-		if (d.lastRun) this.runningState = d.lastRun.state;
+		if (d.lastRun) {
+			const s = d.lastRun.state as PipelineState & {
+				currentSteps?: unknown;
+				currentStepStreams?: unknown;
+			};
+			this.runningState = {
+				...s,
+				currentSteps:
+					s.currentSteps instanceof Set ? s.currentSteps : new Set(),
+				currentStepStreams:
+					s.currentStepStreams instanceof Map
+						? s.currentStepStreams
+						: new Map(),
+			};
+		}
 	}
 
 	reconstruct(ctx: ExtensionContext): void {

@@ -42,9 +42,9 @@ function missingNameError() {
 	};
 }
 
-function loadPreset(state: CaptainState, name: string, cwd: string) {
+async function loadPreset(state: CaptainState, name: string, cwd: string) {
 	try {
-		const resolved = state.resolvePreset(name, cwd);
+		const resolved = await state.resolvePreset(name, cwd);
 		if (!resolved) {
 			return {
 				content: [
@@ -105,7 +105,7 @@ export function registerLoadTool(pi: ExtensionAPI, state: CaptainState) {
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			if (params.action === "list") return listPresets(state, ctx.cwd);
 			if (!params.name) return missingNameError();
-			return loadPreset(state, params.name, ctx.cwd);
+			return await loadPreset(state, params.name, ctx.cwd);
 		},
 
 		renderCall: (args, theme) =>

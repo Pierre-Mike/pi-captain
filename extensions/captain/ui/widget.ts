@@ -89,29 +89,27 @@ function appendStepLine(
 /** Render all steps as compact lines, grouping parallel/pool under a header */
 export function renderStepList(
 	results: StepResult[],
-	currentStep: string | undefined,
-	currentStepStream: string | undefined,
+	currentSteps: Set<string>,
+	currentStepStreams: Map<string, string>,
 	width: number,
 	// biome-ignore lint/suspicious/noExplicitAny: pi theme API is not typed
 	theme: any,
 ): string[] {
-	const streamTail = currentStepStream
-		? (currentStepStream
+	const runningSteps: StepResult[] = [...currentSteps].map((label) => {
+		const stream = currentStepStreams.get(label) ?? "";
+		const streamTail =
+			stream
 				.split("\n")
 				.filter((l) => l.trim())
-				.at(-1) ?? "")
-		: "";
-	const all: StepResult[] = currentStep
-		? [
-				...results,
-				{
-					label: currentStep,
-					status: "running",
-					output: streamTail,
-					elapsed: 0,
-				},
-			]
-		: results;
+				.at(-1) ?? "";
+		return {
+			label,
+			status: "running" as const,
+			output: streamTail,
+			elapsed: 0,
+		};
+	});
+	const all: StepResult[] = [...results, ...runningSteps];
 
 	if (all.length === 0) return [theme.fg("dim", "  Waiting for steps...")];
 
@@ -147,8 +145,8 @@ export function updateWidget(ctx: ExtensionContext, state: PipelineState) {
 					theme.fg("accent", "─".repeat(width)),
 					...renderStepList(
 						state.results,
-						state.currentStep,
-						state.currentStepStream,
+						state.currentSteps,
+						state.currentStepStreams,
 						width,
 						theme,
 					),
