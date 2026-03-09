@@ -3,6 +3,7 @@
 // into its three components so every downstream step has clean references.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -38,5 +39,5 @@ export const parsePrInput: Step = {
 	description: "Parse 'owner/repo#N' into owner, repo, and PR number",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

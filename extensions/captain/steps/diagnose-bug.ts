@@ -2,6 +2,7 @@
 // Traces the root cause using reproduction output and source analysis
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -32,5 +33,5 @@ export const diagnoseBug: Step = {
 			? true
 			: "Diagnosis must reference a specific file path",
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

@@ -3,6 +3,7 @@
 // dry-run into smaller sub-units until all are Haiku-safe.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -43,5 +44,5 @@ export const reShred: Step = {
 		"Extract failed unit names from validation output and re-decompose them into smaller units",
 	prompt,
 	onFail: retry(1),
-	transform: { kind: "full" },
+	transform: full,
 };

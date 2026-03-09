@@ -4,6 +4,7 @@
 // PR numbers, zero PR numbers, two-part strings missing the '#', and empty strings.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -57,5 +58,5 @@ export const validatePrInput: Step = {
 		"Run all 5 rejection-path tests for parsePrInput: single-segment, non-numeric PR, zero PR, missing '#', and empty string",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

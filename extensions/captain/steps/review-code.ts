@@ -4,6 +4,7 @@
 // On failure (critical issues found), falls back to review-fix step.
 
 import { allOf, bunTest, fallback, llmFast, regexCI } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 import { fixReviewIssues } from "./fix-review-issues.js";
 
@@ -81,6 +82,6 @@ export const reviewCode: Step = {
 	),
 	// Fallback: if review finds critical issues, hand off to fixer
 	onFail: fallback(fixReviewIssues),
-	transform: { kind: "full" },
+	transform: full,
 	maxTurns: 15,
 };

@@ -2,6 +2,7 @@
 // Deep analysis of code structure, complexity, and refactoring opportunities
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -28,5 +29,5 @@ export const analyzeCodebase: Step = {
 	gate: ({ output }) =>
 		output.length > 200 ? true : "Analysis output is too short (< 200 chars)",
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

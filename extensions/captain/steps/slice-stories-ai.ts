@@ -4,6 +4,7 @@
 // grounded in real file paths, existing types, and modules.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -68,5 +69,5 @@ export const sliceStoriesAi: Step = {
 		"Codebase-aware vertical story slicing: EARS reqs → INVEST stories with file area mapping",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

@@ -95,7 +95,7 @@ const RUNNABLE_SPEC = `
   prompt: "<instructions for the step>",  // supports $INPUT (prev output) and $ORIGINAL (user request)
   gate: <Gate>,
   onFail: <OnFail>,
-  transform: { kind: "full" }    // or { kind: "extract", key: "<key>" } or { kind: "summarize" }
+  transform: full                 // preset from transforms/presets: full | extract("key") | summarize() | inline fn
 }
 
 ### Sequential — steps run in order, output chains via $INPUT
@@ -263,7 +263,7 @@ function validateStep(r: RawRunnable, path: string): void {
 	if (!r.tools) r.tools = ["read", "bash", "edit", "write"];
 	if (!r.gate) r.gate = { type: "none" };
 	if (!r.onFail) r.onFail = { action: "skip" };
-	if (!r.transform) r.transform = { kind: "full" };
+	if (!r.transform) r.transform = { kind: "full" }; // deserialized to full() by deserializeRunnable
 	if (!r.description) r.description = r.label;
 }
 

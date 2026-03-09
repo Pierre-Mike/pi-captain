@@ -4,6 +4,7 @@
 // SPIDR patterns. Each story cuts through all layers (no horizontal slices).
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -61,5 +62,5 @@ export const sliceStories: Step = {
 		"Vertically slice EARS requirements into thin user stories using business rules + SPIDR",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

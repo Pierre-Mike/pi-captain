@@ -2,6 +2,7 @@
 // Produces a clear, structured summary with actionable insights from research
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -22,5 +23,5 @@ export const summarize: Step = {
 	gate: ({ output }) =>
 		output.length > 100 ? true : "Summary is too short (< 100 chars)",
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

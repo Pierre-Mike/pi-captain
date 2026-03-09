@@ -5,6 +5,7 @@
 import os from "node:os";
 import path from "node:path";
 import { command, retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const piHome = process.env.PI_HOME ?? path.join(os.homedir(), ".pi");
@@ -85,5 +86,5 @@ export const renderCanvas: Step = {
 	prompt: CANVAS_PROMPT,
 	gate: command(`bun ${canvasValidator} backlog.canvas`),
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

@@ -2,7 +2,6 @@
 // Each Step runs via the pi SDK (createAgentSession) — no subprocess needed.
 
 import type { Api, Model } from "@mariozechner/pi-ai";
-import { complete } from "@mariozechner/pi-ai";
 import {
 	createAgentSession,
 	createBashTool,
@@ -258,11 +257,17 @@ async function runStepCore(
 			step.transform,
 			failResult.output,
 			ectx,
+			original,
 		);
 		return { ...failResult, output: transformed, gateResult };
 	}
 
-	const transformed = await applyTransform(step.transform, output, ectx);
+	const transformed = await applyTransform(
+		step.transform,
+		output,
+		ectx,
+		original,
+	);
 	return { status: "passed", output: transformed, gateResult };
 }
 
@@ -432,7 +437,12 @@ async function executeSequential(
 		0,
 	);
 	if (seq.transform) {
-		checked.output = await applyTransform(seq.transform, checked.output, ectx);
+		checked.output = await applyTransform(
+			seq.transform,
+			checked.output,
+			ectx,
+			original,
+		);
 	}
 	return checked;
 }
@@ -510,6 +520,7 @@ async function executePool(
 				pool.transform,
 				checked.output,
 				ectx,
+				original,
 			);
 		}
 		return checked;
@@ -586,6 +597,7 @@ async function executeParallel(
 				par.transform,
 				checked.output,
 				ectx,
+				original,
 			);
 		}
 		return checked;
@@ -615,56 +627,19 @@ async function applyTransform(
 	transform: Transform,
 	output: string,
 	ectx: ExecutorContext,
+	original = "",
 ): Promise<string> {
-	switch (transform.kind) {
-		case "full":
-			return output;
-
-		case "extract": {
-			try {
-				const jsonMatch = output.match(/```(?:json)?\s*([\s\S]*?)```/) || [
-					null,
-					output,
-				];
-				const parsed = JSON.parse(jsonMatch[1]?.trim());
-				return String(parsed[transform.key] ?? output);
-			} catch {
-				return output;
-			}
-		}
-
-		case "summarize": {
-			try {
-				const response = await complete(
-					ectx.model,
-					{
-						messages: [
-							{
-								role: "user",
-								content: [
-									{
-										type: "text",
-										text: `Summarize concisely in 2-3 sentences:\n\n${output.slice(0, 4000)}`,
-									},
-								],
-								timestamp: Date.now(),
-							},
-						],
-					},
-					{ apiKey: ectx.apiKey, maxTokens: 512, signal: ectx.signal },
-				);
-				return response.content
-					.filter((c): c is { type: "text"; text: string } => c.type === "text")
-					.map((c) => c.text)
-					.join("\n");
-			} catch {
-				return output;
-			}
-		}
-
-		default:
-			return output;
-	}
+	const ctx: GateCtx = {
+		cwd: ectx.cwd,
+		signal: ectx.signal,
+		exec: ectx.exec,
+		confirm: ectx.confirm,
+		hasUI: ectx.hasUI,
+		model: ectx.model,
+		apiKey: ectx.apiKey,
+		modelRegistry: ectx.modelRegistry,
+	};
+	return transform({ output, original, ctx });
 }
 
 // OnFail coverage in handleFailure (step-level gate failures):

@@ -8,6 +8,7 @@
 // generateExecutionSpec, and renderCanvas all work unchanged downstream.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -88,5 +89,5 @@ export const contractTasks: Step = {
 		"Convert BDD scenarios into typed AI execution contracts (prompt-as-contract pattern, UNIT-N format)",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

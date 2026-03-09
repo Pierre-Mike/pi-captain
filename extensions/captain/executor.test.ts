@@ -6,6 +6,7 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import type { ExecutorContext } from "./executor.js";
 import { skip, warn } from "./gates/on-fail.js";
+import { extract, full } from "./transforms/presets.js";
 import type { Parallel, Pool, Sequential, Step } from "./types.js";
 
 // ── Shared mutable session config ──────────────────────────────────────────
@@ -77,7 +78,7 @@ function makeStep(label: string, prompt = "do $INPUT"): Step {
 		label,
 		prompt,
 		onFail: skip,
-		transform: { kind: "full" },
+		transform: full,
 	};
 }
 
@@ -194,7 +195,7 @@ describe("executeRunnable: step", () => {
 describe("executeRunnable: transform", () => {
 	test("full transform returns output as-is", async () => {
 		resetSessionCfg("raw output");
-		const step: Step = { ...makeStep("t"), transform: { kind: "full" } };
+		const step: Step = { ...makeStep("t"), transform: full };
 		const { output } = await executeRunnable(step, "", "", makeCtx());
 		expect(output).toBe("raw output");
 	});
@@ -203,7 +204,7 @@ describe("executeRunnable: transform", () => {
 		resetSessionCfg('{"name":"Alice","age":30}');
 		const step: Step = {
 			...makeStep("t"),
-			transform: { kind: "extract", key: "name" },
+			transform: extract("name"),
 		};
 		const { output } = await executeRunnable(step, "", "", makeCtx());
 		expect(output).toBe("Alice");
@@ -213,7 +214,7 @@ describe("executeRunnable: transform", () => {
 		resetSessionCfg("not json");
 		const step: Step = {
 			...makeStep("t"),
-			transform: { kind: "extract", key: "name" },
+			transform: extract("name"),
 		};
 		const { output } = await executeRunnable(step, "", "", makeCtx());
 		expect(output).toBe("not json");

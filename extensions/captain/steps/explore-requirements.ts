@@ -3,6 +3,7 @@
 // problem space, understand vision, context, goals, and stakeholders.
 
 import { retry, user } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -53,5 +54,5 @@ export const exploreRequirements: Step = {
 	prompt,
 	gate: user,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

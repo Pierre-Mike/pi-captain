@@ -2,6 +2,7 @@
 // Applies the refactoring plan while preserving existing behavior
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -28,5 +29,5 @@ export const refactorCode: Step = {
 	description: "Apply refactoring changes based on the analysis plan",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

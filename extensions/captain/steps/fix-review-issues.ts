@@ -3,6 +3,7 @@
 // then re-verifies tests pass.
 
 import { allOf, bunTest, regexCI, retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -39,6 +40,6 @@ export const fixReviewIssues: Step = {
 	// Gate: tests must pass + review issues resolved
 	gate: allOf(bunTest, regexCI("review.passed.*yes")),
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 	maxTurns: 20,
 };

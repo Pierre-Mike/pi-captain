@@ -5,6 +5,7 @@
 // retry-loop, and auth-failure-path steps downstream.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -37,5 +38,5 @@ export const fetchPrMetadataAuthCheck: Step = {
 		"Read GITHUB_TOKEN from the environment and throw a typed AuthError if absent or empty",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

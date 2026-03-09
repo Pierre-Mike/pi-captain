@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { full } from "../transforms/presets.js";
 import type { Parallel, Pool, Runnable, Sequential, Step } from "../types.js";
 import {
 	collectAgentRefs,
@@ -15,7 +16,7 @@ const step = (label: string): Step => ({
 	kind: "step",
 	label,
 	prompt: "do something",
-	transform: { kind: "full" },
+	transform: full,
 });
 
 const seq = (...steps: Runnable[]): Sequential => ({

@@ -1,6 +1,7 @@
 // ── Step: Research ────────────────────────────────────────────────────────
 // Deep dive into a topic, listing key findings and considerations
 
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -16,5 +17,5 @@ export const research: Step = {
 	tools: ["read", "bash"],
 	description: "Deep dive into the topic",
 	prompt,
-	transform: { kind: "full" },
+	transform: full,
 };

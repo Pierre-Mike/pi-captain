@@ -22,7 +22,7 @@ export function registerDefineTool(pi: ExtensionAPI, state: CaptainState) {
 			"  - gate: { type: 'command'|'user'|'file'|'assert'|'llm'|'none', value }",
 			"  - llm gate: { type: 'llm', prompt: 'evaluation criteria', model?: 'flash', threshold?: 0.7 }",
 			"  - onFail: retry | retryWithDelay(N, ms) | skip | warn | fallback(step) | ({ retryCount }) => ...",
-			"  - transform: { kind: 'full'|'extract'|'summarize', key? }",
+			"  - transform: full | extract('key') | summarize() | ({ output, original, ctx }) => string",
 			"",
 			"Sequential: { kind: 'sequential', steps: Runnable[], gate?, onFail? }",
 			"Pool: { kind: 'pool', step: Runnable, count: N, merge: { strategy }, gate?, onFail? }",

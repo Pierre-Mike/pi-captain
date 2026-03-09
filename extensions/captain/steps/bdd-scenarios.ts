@@ -4,6 +4,7 @@
 // The ">6 criteria = split the story" heuristic is enforced.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -52,5 +53,5 @@ export const bddScenarios: Step = {
 		"Distill user stories into Given/When/Then acceptance scenarios (ATDD outer loop)",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

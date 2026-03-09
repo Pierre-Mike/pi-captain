@@ -2,6 +2,7 @@
 // Runs the reproduction test again to confirm the bug is resolved
 
 import { command, retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -28,5 +29,5 @@ export const verifyFix: Step = {
 	// Gate: test suite must pass after the fix
 	gate: command("bun test"),
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

@@ -5,6 +5,7 @@
 // all files are reviewed in parallel — results merged via concat.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -47,5 +48,5 @@ export const reviewPrFile: Step = {
 		"Review a single changed file for correctness, security, quality — emit inline comments",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

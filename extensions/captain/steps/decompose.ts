@@ -3,6 +3,7 @@
 // self-contained, testable sub-tasks with dependency tracking.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -47,5 +48,5 @@ export const decompose: Step = {
 	description: "Recursively split the spec into atomic sub-tasks",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

@@ -3,6 +3,7 @@
 // pipeline JSON spec that can be loaded and run directly.
 
 import { file, retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -49,5 +50,5 @@ export const generateExecutionSpec: Step = {
 	prompt,
 	gate: file("execution-spec.json"),
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

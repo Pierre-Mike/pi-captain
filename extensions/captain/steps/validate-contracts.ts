@@ -7,6 +7,7 @@
 //   4. Runnable verification — a real shell command, not a description
 
 import { fallback, regexCI } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 import { contractTasks } from "./contract-tasks.js";
 
@@ -90,5 +91,5 @@ export const validateContracts: Step = {
 	prompt,
 	gate: regexCI("all.contracts.valid.*yes"),
 	onFail: fallback(reContract),
-	transform: { kind: "full" },
+	transform: full,
 };

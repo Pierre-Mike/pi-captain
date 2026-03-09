@@ -4,6 +4,7 @@
 // scenarios → TDD task list. The living decomposition artifact.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -73,5 +74,5 @@ export const formatBacklog: Step = {
 		"Synthesize full hierarchy into a BACKLOG.md living decomposition artifact",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

@@ -3,6 +3,7 @@
 // unambiguous specification with inputs, outputs, acceptance criteria.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -47,5 +48,5 @@ export const captureAndClarify: Step = {
 	description: "Transform raw requirement into a structured spec",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

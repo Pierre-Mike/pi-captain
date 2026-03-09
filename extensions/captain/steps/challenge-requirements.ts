@@ -4,6 +4,7 @@
 // perspectives, and completeness.
 
 import { retry, user } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -67,5 +68,5 @@ export const challengeRequirements: Step = {
 	prompt,
 	gate: user,
 	onFail: retry(1),
-	transform: { kind: "full" },
+	transform: full,
 };

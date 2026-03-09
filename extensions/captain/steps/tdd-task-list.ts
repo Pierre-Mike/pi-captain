@@ -4,6 +4,7 @@
 // scenarios → each maps to 1 failing test → 1 function → 1 commit.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -53,5 +54,5 @@ export const tddTaskList: Step = {
 		"Apply Kent Beck's Canon TDD task list: each BDD scenario → atomic unit tests → 1 function each",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

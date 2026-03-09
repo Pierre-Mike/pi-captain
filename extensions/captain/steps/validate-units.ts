@@ -3,6 +3,7 @@
 // in a single pass with no ambiguity. Falls back to re-shred on failure.
 
 import { fallback, regexCI } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 import { reShred } from "./re-shred.js";
 
@@ -49,5 +50,5 @@ export const validateUnits: Step = {
 	prompt,
 	gate: regexCI("all.validated.*yes"),
 	onFail: fallback(reShred),
-	transform: { kind: "full" },
+	transform: full,
 };

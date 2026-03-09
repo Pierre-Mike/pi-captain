@@ -3,6 +3,7 @@
 // the spec. Runs in parallel with TDD Green.
 
 import { llmFast } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -46,6 +47,6 @@ export const writeDocs: Step = {
 			"Rate completeness 0-1. Threshold: 0.6",
 	),
 	onFail: { action: "warn" },
-	transform: { kind: "full" },
+	transform: full,
 	maxTurns: 15,
 };

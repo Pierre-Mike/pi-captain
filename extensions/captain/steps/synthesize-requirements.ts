@@ -4,6 +4,7 @@
 // professional requirements document written to REQUIREMENTS.md.
 
 import { allOf, file, llmFast, retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -113,5 +114,5 @@ export const synthesizeRequirements: Step = {
 		),
 	),
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

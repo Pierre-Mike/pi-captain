@@ -14,7 +14,8 @@ import {
 	warn,
 } from "./gates/on-fail.js";
 import { command, file, regexCI, user } from "./gates/presets.js";
-import type { Gate, OnFail, Runnable, Step } from "./types.js";
+import { extract, full, summarize } from "./transforms/presets.js";
+import type { Gate, OnFail, Runnable, Step, Transform } from "./types.js";
 
 // ── Gate deserialization ──────────────────────────────────────────────────
 
@@ -82,6 +83,19 @@ function deserializeOnFail(raw: unknown): OnFail | undefined {
 	}
 }
 
+// ── Transform deserialization ─────────────────────────────────────────────
+
+type RawTransform = { kind: "full" | "extract" | "summarize"; key?: string };
+
+function deserializeTransform(raw: unknown): Transform {
+	if (typeof raw === "function") return raw as Transform;
+	const t = raw as RawTransform | undefined;
+	if (!t || t.kind === "full") return full;
+	if (t.kind === "extract") return extract(t.key ?? "");
+	if (t.kind === "summarize") return summarize();
+	return full;
+}
+
 // ── Runnable deserialization ──────────────────────────────────────────────
 
 function deserializeStep(s: Step): Step {
@@ -89,6 +103,7 @@ function deserializeStep(s: Step): Step {
 		...s,
 		gate: deserializeGate(s.gate),
 		onFail: deserializeOnFail(s.onFail),
+		transform: deserializeTransform(s.transform),
 	};
 }
 
@@ -103,6 +118,7 @@ export function deserializeRunnable(r: Runnable): Runnable {
 				...r,
 				gate: deserializeGate(r.gate),
 				onFail: deserializeOnFail(r.onFail),
+				transform: r.transform ? deserializeTransform(r.transform) : undefined,
 				steps: r.steps.map(deserializeRunnable),
 			};
 
@@ -111,6 +127,7 @@ export function deserializeRunnable(r: Runnable): Runnable {
 				...r,
 				gate: deserializeGate(r.gate),
 				onFail: deserializeOnFail(r.onFail),
+				transform: r.transform ? deserializeTransform(r.transform) : undefined,
 				step: deserializeRunnable(r.step),
 			};
 
@@ -119,6 +136,7 @@ export function deserializeRunnable(r: Runnable): Runnable {
 				...r,
 				gate: deserializeGate(r.gate),
 				onFail: deserializeOnFail(r.onFail),
+				transform: r.transform ? deserializeTransform(r.transform) : undefined,
 				steps: r.steps.map(deserializeRunnable),
 			};
 

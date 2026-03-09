@@ -84,11 +84,39 @@ export type OnFailResult =
  */
 export type OnFail = (ctx: OnFailCtx) => OnFailResult | Promise<OnFailResult>;
 
-/** Data transform between steps */
-export type Transform =
-	| { kind: "full" } // pass entire output
-	| { kind: "extract"; key: string } // extract JSON key from output
-	| { kind: "summarize" }; // ask LLM to summarize output
+/**
+ * Context passed to a Transform function — same surface as GateCtx so
+ * transforms can exec shell commands, call LLMs, or interact with the UI.
+ */
+export type TransformCtx = GateCtx;
+
+/**
+ * A transform is a plain function that maps one step's output to the next step's input.
+ * It receives the raw output, the original pipeline input, and a side-effect context.
+ *
+ * Use the built-in presets from `transforms/presets.ts` for common cases:
+ * @example
+ * import { full, extract, summarize } from "./transforms/presets.js";
+ *
+ * transform: full                        // pass output unchanged
+ * transform: extract("items")            // pull a JSON key
+ * transform: summarize()                 // LLM summary
+ *
+ * // Or write inline for full control:
+ * transform: ({ output }) => output.trim()
+ * transform: async ({ output, ctx }) => {
+ *   const { stdout } = await ctx.exec("jq", ["-r", ".data"], {});
+ *   return stdout || output;
+ * }
+ */
+export type Transform = (params: {
+	/** The raw output produced by the step */
+	output: string;
+	/** The very first input to the whole pipeline ($ORIGINAL) */
+	original: string;
+	/** Side-effect helpers (shell, confirm, LLM model, …) */
+	ctx: TransformCtx;
+}) => string | Promise<string>;
 
 /** Merge strategy for combining parallel/pool outputs */
 export type MergeStrategy =

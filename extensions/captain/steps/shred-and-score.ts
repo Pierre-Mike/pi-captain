@@ -3,6 +3,7 @@
 // re-split any unit above the Haiku-safe threshold (composite ≤ 2).
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -54,5 +55,5 @@ export const shredAndScore: Step = {
 		"Score complexity and re-split any unit above the Haiku-safe threshold",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

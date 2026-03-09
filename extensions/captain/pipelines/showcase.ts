@@ -20,6 +20,7 @@
 
 import { fallback as onFailFallback, retry, warn } from "../gates/on-fail.js";
 import { regexCI } from "../gates/presets.js";
+import { extract, full, summarize } from "../transforms/presets.js";
 import type {
 	OnFail,
 	Parallel,
@@ -37,7 +38,6 @@ const flash = "flash";
 const noTools: string[] = [];
 const noGate = undefined;
 const noFail: OnFail = warn;
-const full = { kind: "full" } as const;
 
 // ─────────────────────────────────────────────────────────────────────────
 // Step 1 — Basic step: raw input → numbered list of ideas
@@ -155,7 +155,7 @@ const summarizeStep: Step = {
 $INPUT`,
 	gate: noGate,
 	onFail: noFail,
-	transform: { kind: "summarize" },
+	transform: summarize(),
 };
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -182,7 +182,7 @@ $INPUT`,
 	},
 	// ⚠️  flash sometimes wraps JSON in markdown — this should not happen with a strict prompt
 	onFail: warn,
-	transform: { kind: "extract", key: "winner" },
+	transform: extract("winner"),
 };
 
 // ─────────────────────────────────────────────────────────────────────────

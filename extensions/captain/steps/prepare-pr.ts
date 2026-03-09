@@ -4,6 +4,7 @@
 // Gated on tests passing + human approval before push.
 
 import { allOf, bunTest, retry, user } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -57,6 +58,6 @@ export const preparePR: Step = {
 	// Gate: tests must pass + human must approve before push
 	gate: allOf(bunTest, user),
 	onFail: retry(1),
-	transform: { kind: "full" },
+	transform: full,
 	maxTurns: 10,
 };

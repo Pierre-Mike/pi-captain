@@ -5,6 +5,7 @@
 // Throws a typed HttpError (with status code) on non-2xx responses.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -41,5 +42,5 @@ export const fetchPrMetadataGhCall: Step = {
 		"Call GET /repos/{owner}/{repo}/pulls/{prNumber} with Bearer token — return raw PR JSON or throw typed HttpError",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

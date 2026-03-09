@@ -4,6 +4,7 @@
 // testable: "While [precondition], when [trigger], the [system] shall [response]."
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -52,5 +53,5 @@ export const earsStructure: Step = {
 		"Transform raw requirement into testable EARS-structured statements",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

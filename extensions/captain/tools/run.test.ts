@@ -8,6 +8,7 @@
 import { describe, expect, mock, test } from "bun:test";
 import { skip } from "../gates/on-fail.js";
 import type { CaptainState } from "../state.js";
+import { full } from "../transforms/presets.js";
 import type { Runnable } from "../types.js";
 
 // ── Module mocks ───────────────────────────────────────────────────────────
@@ -72,7 +73,7 @@ const SIMPLE_PIPELINE: Runnable = {
 	prompt: "do $INPUT",
 	gate: undefined,
 	onFail: skip,
-	transform: { kind: "full" },
+	transform: full,
 };
 
 function makeMinimalState(

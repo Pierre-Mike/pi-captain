@@ -3,6 +3,7 @@
 // cycles, topological sort into parallelizable execution layers.
 
 import { regexCI, retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -63,5 +64,5 @@ export const resolveDependencies: Step = {
 	prompt,
 	gate: regexCI("cycles.detected.*no"),
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

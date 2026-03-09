@@ -3,6 +3,7 @@
 // testable technical specification from the raw requirement.
 
 import { allOf, llmFast, retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -81,5 +82,5 @@ export const writeSpec: Step = {
 		),
 	),
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

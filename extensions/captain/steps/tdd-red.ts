@@ -3,6 +3,7 @@
 // Tests MUST FAIL because no implementation exists yet.
 
 import { command, retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -51,6 +52,6 @@ export const tddRed: Step = {
 	// Gate: tests must exit non-zero (all failing = success for RED phase)
 	gate: command("bun test 2>&1; test $? -ne 0"),
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 	maxTurns: 15,
 };

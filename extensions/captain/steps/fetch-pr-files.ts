@@ -4,6 +4,7 @@
 // with per-file stats (additions, deletions, patch content).
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -41,5 +42,5 @@ export const fetchPrFiles: Step = {
 		"Fetch all changed files and diffs via GitHub CLI — emit structured file list for parallel review",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

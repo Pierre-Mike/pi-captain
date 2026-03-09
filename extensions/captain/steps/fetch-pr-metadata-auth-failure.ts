@@ -5,6 +5,7 @@
 // HTTP 401, no generic error type.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -42,5 +43,5 @@ export const fetchPrMetadataAuthFailure: Step = {
 		"Assert that missing/empty GITHUB_TOKEN throws AuthError before any API call is made",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

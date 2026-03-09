@@ -2,6 +2,7 @@
 // Attempts to reproduce the reported bug with a minimal test case
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -34,5 +35,5 @@ export const reproduceBug: Step = {
 			: "Reproduction must show an error, failure, or explicit 'reproduce' evidence";
 	},
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

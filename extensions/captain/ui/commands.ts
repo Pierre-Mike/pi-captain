@@ -7,6 +7,7 @@ import type { ExecutorContext } from "../executor.js";
 import { executeRunnable } from "../executor.js";
 import { skip } from "../gates/on-fail.js";
 import type { CaptainState } from "../state.js";
+import { full } from "../transforms/presets.js";
 import type { PipelineState, Runnable, Step } from "../types.js";
 import {
 	collectStepLabels,
@@ -61,7 +62,7 @@ function buildAdHocStep(prompt: string, flags: Record<string, string>): Step {
 		tools: toolsList ?? ["read", "bash", "edit", "write"],
 		gate: undefined,
 		onFail: skip,
-		transform: { kind: "full" },
+		transform: full,
 	};
 }
 

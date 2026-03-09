@@ -3,6 +3,7 @@
 // all failing tests pass. Does NOT modify test files.
 
 import { bunTest, retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -49,6 +50,6 @@ export const tddGreen: Step = {
 	// Gate: all tests must pass
 	gate: bunTest,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 	maxTurns: 25,
 };

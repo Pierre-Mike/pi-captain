@@ -2,6 +2,7 @@
 // Applies the proposed fix from the diagnosis step
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -27,5 +28,5 @@ export const fixBug: Step = {
 	description: "Apply the diagnosed fix to the codebase",
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };

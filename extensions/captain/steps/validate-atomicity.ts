@@ -3,6 +3,7 @@
 // 1 function, 1 test, 5–15 min estimate. Flag and re-split any violators.
 
 import { fallback, regexCI } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 import { tddTaskList } from "./tdd-task-list.js";
 
@@ -67,5 +68,5 @@ export const validateAtomicity: Step = {
 	prompt,
 	gate: regexCI("all.atomic.*yes"),
 	onFail: fallback(reExpandTasks),
-	transform: { kind: "full" },
+	transform: full,
 };

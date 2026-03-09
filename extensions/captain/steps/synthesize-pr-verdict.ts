@@ -4,6 +4,7 @@
 // review summary, then post the full review to GitHub via the CLI.
 
 import { retry } from "../gates/index.js";
+import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
 const prompt = `
@@ -50,5 +51,5 @@ export const synthesizePrVerdict: Step = {
 	description: `Aggregate all file findings → final verdict + reasoning, then post review to GitHub via CLI`,
 	prompt,
 	onFail: retry,
-	transform: { kind: "full" },
+	transform: full,
 };
