@@ -48,6 +48,6 @@ export const generateExecutionSpec: Step = {
 		"Convert the task tree into an executable captain pipeline JSON spec",
 	prompt,
 	gate: file("execution-spec.json"),
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

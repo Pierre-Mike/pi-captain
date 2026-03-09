@@ -62,6 +62,6 @@ export const resolveDependencies: Step = {
 		"Build adjacency graph, detect cycles, topological sort into parallelizable execution layers",
 	prompt,
 	gate: regexCI("cycles.detected.*no"),
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

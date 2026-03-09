@@ -3,7 +3,8 @@
 // This module converts them to their function equivalents before execution.
 //
 // Gate JSON shape:   { type: "none" | "command" | "user" | ... }
-// OnFail JSON shape: { action: "retry" | "skip" | "warn" | "fallback" | "retryWithDelay", ... }
+// OnFail JSON shape: { action: "retry" | "retryWithDelay" | "skip" | "warn" | "fallback", max?, delayMs? }
+// retryWithDelay is sugar: deserialized to retryWithDelay(max, delayMs) preset.
 
 import {
 	fallback,

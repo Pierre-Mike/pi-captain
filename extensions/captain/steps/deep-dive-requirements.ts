@@ -61,6 +61,6 @@ export const deepDiveRequirements: Step = {
 		"Targeted closed and open questions to eliminate ambiguity and lock down specifics",
 	prompt,
 	gate: user,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

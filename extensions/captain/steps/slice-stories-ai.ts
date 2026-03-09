@@ -67,6 +67,6 @@ export const sliceStoriesAi: Step = {
 	description:
 		"Codebase-aware vertical story slicing: EARS reqs → INVEST stories with file area mapping",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

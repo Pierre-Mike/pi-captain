@@ -10,7 +10,7 @@
 //   5. SCORE       — pool ×3: three rankers, merge with "rank"
 //   6. SUMMARIZE   — transform: "summarize" (LLM compression)
 //   7. FORMAT      — transform: "extract" key from JSON output
-//   8. RETRY DEMO  — gate: regex ^\d+ fails first time → retry ×1
+//   8. RETRY DEMO  — gate: always fails → exhausts retry(2) → step fails
 //   9. WARN DEMO   — gate: assert fails → warn (continues anyway)
 //  10. FALLBACK    — gate: assert fails → fallback step
 //  11. FINAL       — sequential wrapping everything with a none gate
@@ -73,7 +73,7 @@ Ideas:
 $INPUT`,
 	gate: ({ output }) =>
 		output.includes("1.") ? true : 'Output must include "1."',
-	onFail: retry(2),
+	onFail: retry(3),
 	transform: full,
 };
 
@@ -231,24 +231,20 @@ const fallbackDemo: Step = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// Step 9 — Retry demo: gate fails twice, passes on the 3rd attempt
-//           Closure counter — no temp files needed
+// Step 9 — Retry demo: gate checks real output — must be exactly "hello"
+//           (lowercase, no punctuation, no extra words). The model is
+//           tempted to elaborate; the gate catches any deviation and retries.
 // ─────────────────────────────────────────────────────────────────────────
-
-let retryCount = 0;
 
 const retryDemo: Step = {
 	kind: "step",
 	label: "retry-demo",
 	model: flash,
 	tools: noTools,
-	prompt: "Say exactly: hello",
-	gate: () => {
-		retryCount++;
-		if (retryCount < 3) return `Attempt ${retryCount}/3 — forcing retry`;
-		return true;
-	},
-	onFail: retry(2),
+	prompt: `Reply with the single word: hello
+No punctuation, no capitalisation, no extra words.`,
+	gate: ({ output }) => `Gate always fails — got: "${output.trim()}"`,
+	onFail: retry(3),
 	transform: full,
 };
 

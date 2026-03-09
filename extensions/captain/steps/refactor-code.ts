@@ -27,6 +27,6 @@ export const refactorCode: Step = {
 	tools: ["read", "bash", "edit", "write"],
 	description: "Apply refactoring changes based on the analysis plan",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

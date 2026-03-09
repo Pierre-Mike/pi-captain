@@ -51,6 +51,6 @@ export const earsStructure: Step = {
 	description:
 		"Transform raw requirement into testable EARS-structured statements",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

@@ -80,6 +80,6 @@ export const writeSpec: Step = {
 				"(5) edge cases? Rate completeness 0-1. Threshold: 0.7",
 		),
 	),
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

@@ -34,6 +34,6 @@ export const edgeCaseGen: Step = {
 	prompt,
 	// Gate: edge case tests must pass (code should handle them)
 	gate: command("bun test"),
-	onFail: retry(3),
+	onFail: retry,
 	transform: { kind: "full" },
 };

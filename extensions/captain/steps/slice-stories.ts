@@ -60,6 +60,6 @@ export const sliceStories: Step = {
 	description:
 		"Vertically slice EARS requirements into thin user stories using business rules + SPIDR",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

@@ -56,6 +56,6 @@ export const validatePrInput: Step = {
 	description:
 		"Run all 5 rejection-path tests for parsePrInput: single-segment, non-numeric PR, zero PR, missing '#', and empty string",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

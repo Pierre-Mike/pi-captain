@@ -32,7 +32,6 @@ export function registerStatusTool(pi: ExtensionAPI, state: CaptainState) {
 							text: `Pipeline "${params.name}" defined but has not been run yet.`,
 						},
 					],
-					details: state.snapshot(),
 				};
 			}
 
@@ -55,7 +54,6 @@ export function registerStatusTool(pi: ExtensionAPI, state: CaptainState) {
 
 			return {
 				content: [{ type: "text", text: lines.join("\n") }],
-				details: state.snapshot(s),
 			};
 		},
 

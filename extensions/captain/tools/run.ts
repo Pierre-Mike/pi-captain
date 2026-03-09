@@ -5,7 +5,7 @@ import { Type } from "@sinclair/typebox";
 import type { ExecutorContext } from "../executor.js";
 import { executeRunnable } from "../executor.js";
 import type { CaptainState } from "../state.js";
-import type { CaptainDetails, PipelineState, StepResult } from "../types.js";
+import type { PipelineState, StepResult } from "../types.js";
 import {
 	buildPipelineSelectOptions,
 	parsePipelineSelectOption,
@@ -306,7 +306,6 @@ async function runPipeline(
 					),
 				},
 			],
-			details: state.snapshot(pipelineState),
 		};
 	} catch (err) {
 		pipelineState.status = "failed";
@@ -318,7 +317,6 @@ async function runPipeline(
 			content: [
 				{ type: "text", text: `Pipeline "${resolvedName}" failed: ${errMsg}` },
 			],
-			details: state.snapshot(pipelineState),
 			isError: true,
 		};
 	}
@@ -400,26 +398,7 @@ export function registerRunTool(
 				return new Text(theme.fg("accent", "● Running pipeline..."), 0, 0);
 			if (result.isError)
 				return new Text(theme.fg("error", "✗ Pipeline failed"), 0, 0);
-			const d = result.details as CaptainDetails | undefined;
-			if (!d?.lastRun) return new Text(theme.fg("success", "✓ Done"), 0, 0);
-			const s = d.lastRun.state;
-			const elapsed =
-				s.endTime && s.startTime
-					? ((s.endTime - s.startTime) / 1000).toFixed(1)
-					: "?";
-			const passed = s.results.filter((r) => r.status === "passed").length;
-			const failed = s.results.filter((r) => r.status === "failed").length;
-			const skipped = s.results.filter((r) => r.status === "skipped").length;
-			return new Text(
-				theme.fg("success", `✓ ${s.name}`) +
-					theme.fg("dim", ` ${elapsed}s`) +
-					theme.fg("dim", "  ") +
-					theme.fg("success", `${passed}✓`) +
-					(failed > 0 ? theme.fg("error", ` ${failed}✗`) : "") +
-					(skipped > 0 ? theme.fg("dim", ` ${skipped}⊘`) : ""),
-				0,
-				0,
-			);
+			return new Text(theme.fg("success", "✓ Done"), 0, 0);
 		},
 	});
 }

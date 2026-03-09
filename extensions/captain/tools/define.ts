@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
 import type { CaptainState } from "../state.js";
-import type { CaptainDetails, Runnable } from "../types.js";
+import type { Runnable } from "../types.js";
 import { describeRunnable } from "../utils/index.js";
 
 export function registerDefineTool(pi: ExtensionAPI, state: CaptainState) {
@@ -21,7 +21,7 @@ export function registerDefineTool(pi: ExtensionAPI, state: CaptainState) {
 			"  - jsonOutput?: true  → passes --mode json to pi (step output is structured JSON)",
 			"  - gate: { type: 'command'|'user'|'file'|'assert'|'llm'|'none', value }",
 			"  - llm gate: { type: 'llm', prompt: 'evaluation criteria', model?: 'flash', threshold?: 0.7 }",
-			"  - onFail: retry(N) | retryWithDelay(N, ms) | skip | warn | fallback(step) | custom fn",
+			"  - onFail: retry | retryWithDelay(N, ms) | skip | warn | fallback(step) | ({ retryCount }) => ...",
 			"  - transform: { kind: 'full'|'extract'|'summarize', key? }",
 			"",
 			"Sequential: { kind: 'sequential', steps: Runnable[], gate?, onFail? }",
@@ -62,7 +62,6 @@ export function registerDefineTool(pi: ExtensionAPI, state: CaptainState) {
 							text: `Captain pipeline "${params.name}" defined:\n${summary}\n\n💾 Saved to ${savedPath}`,
 						},
 					],
-					details: state.snapshot(),
 				};
 			} catch (err) {
 				return {
@@ -87,13 +86,7 @@ export function registerDefineTool(pi: ExtensionAPI, state: CaptainState) {
 		renderResult: (result, _opts, theme) => {
 			if (result.isError)
 				return new Text(theme.fg("error", "✗ Invalid spec"), 0, 0);
-			const d = result.details as CaptainDetails | undefined;
-			const count = d ? Object.keys(d.pipelines).length : 0;
-			return new Text(
-				theme.fg("success", `✓ ${count} pipeline(s) defined`),
-				0,
-				0,
-			);
+			return new Text(theme.fg("success", "✓ Pipeline defined"), 0, 0);
 		},
 	});
 }

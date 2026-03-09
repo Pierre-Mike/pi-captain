@@ -49,6 +49,6 @@ export const synthesizePrVerdict: Step = {
 	temperature: 0,
 	description: `Aggregate all file findings → final verdict + reasoning, then post review to GitHub via CLI`,
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

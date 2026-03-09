@@ -2,7 +2,6 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
 import type { CaptainState } from "../state.js";
-import type { CaptainDetails } from "../types.js";
 
 export function registerListTool(pi: ExtensionAPI, state: CaptainState) {
 	pi.registerTool({
@@ -23,7 +22,6 @@ export function registerListTool(pi: ExtensionAPI, state: CaptainState) {
 							text: "No pipelines defined or available. Use captain_define to create one.",
 						},
 					],
-					details: state.snapshot(),
 				};
 			}
 
@@ -31,16 +29,12 @@ export function registerListTool(pi: ExtensionAPI, state: CaptainState) {
 			const header = loaded > 0 ? `${loaded} pipeline(s) loaded:\n\n` : "";
 			return {
 				content: [{ type: "text", text: `${header}${lines.join("\n")}` }],
-				details: state.snapshot(),
 			};
 		},
 
 		renderCall: (_args, theme) =>
 			new Text(theme.fg("toolTitle", theme.bold("captain_list")), 0, 0),
-		renderResult: (result, _opts, theme) => {
-			const d = result.details as CaptainDetails | undefined;
-			const count = d ? Object.keys(d.pipelines).length : 0;
-			return new Text(theme.fg("success", `${count} pipeline(s)`), 0, 0);
-		},
+		renderResult: (_result, _opts, theme) =>
+			new Text(theme.fg("success", "✓ Listed"), 0, 0),
 	});
 }

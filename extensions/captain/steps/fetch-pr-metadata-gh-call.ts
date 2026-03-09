@@ -40,6 +40,6 @@ export const fetchPrMetadataGhCall: Step = {
 	description:
 		"Call GET /repos/{owner}/{repo}/pulls/{prNumber} with Bearer token — return raw PR JSON or throw typed HttpError",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

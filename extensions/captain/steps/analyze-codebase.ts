@@ -27,6 +27,6 @@ export const analyzeCodebase: Step = {
 	// Gate: analysis must be substantive (at least 200 chars)
 	gate: ({ output }) =>
 		output.length > 200 ? true : "Analysis output is too short (< 200 chars)",
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

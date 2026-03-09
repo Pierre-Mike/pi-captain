@@ -28,18 +28,8 @@ const baseDir = (() => {
 export default function (pi: ExtensionAPI) {
 	const state = new CaptainState();
 
-	// ── Session Reconstruction ─────────────────────────────────────────────
-	const reconstruct = (ctx: Parameters<Parameters<typeof pi.on>[1]>[1]) => {
-		state.reconstruct(ctx as Parameters<typeof state.reconstruct>[0]);
-	};
-	pi.on("session_start", async (_e, ctx) => reconstruct(ctx));
-	pi.on("session_switch", async (_e, ctx) => reconstruct(ctx));
-	pi.on("session_fork", async (_e, ctx) => reconstruct(ctx));
-	pi.on("session_tree", async (_e, ctx) => reconstruct(ctx));
-
-	// ── Bundled Skill ──────────────────────────────────────────────────────
+	// ── Bundled Prompts ────────────────────────────────────────────────────
 	pi.on("resources_discover", () => ({
-		skillPaths: [join(baseDir, "skill", "SKILL.md")],
 		promptPaths: [join(baseDir, "prompts", "orchestrate.md")],
 	}));
 

@@ -1,19 +1,25 @@
 // ── OnFail Presets — reusable failure handling strategies ─────────────────
 // Each preset is an OnFail function: (ctx: OnFailCtx) => OnFailResult
-// Mirrors Gate style: return a plain value, compose freely, or write your own inline.
+// Factories are allowed — they must return a proper OnFail, not leak config into the result.
+// Write your own inline for custom behaviour — it's just a function.
 
 import type { OnFail, Step } from "../types.js";
 
 // ── Presets ───────────────────────────────────────────────────────────────
 
-/** Retry the scope immediately, up to `max` times (default 3) */
+/** Retry the step up to `max` times (default 3), then fail */
 export function retry(max = 3): OnFail {
-	return () => ({ action: "retry", max });
+	return ({ retryCount }) =>
+		retryCount < max ? { action: "retry" } : { action: "fail" };
 }
 
-/** Retry the scope after `delayMs` milliseconds, up to `max` times (default 3) */
+/** Retry the step after `delayMs` milliseconds, up to `max` times */
 export function retryWithDelay(max = 3, delayMs: number): OnFail {
-	return () => ({ action: "retryWithDelay", max, delayMs });
+	return async ({ retryCount }) => {
+		if (retryCount >= max) return { action: "fail" };
+		await new Promise((r) => setTimeout(r, delayMs));
+		return { action: "retry" };
+	};
 }
 
 /** Run an alternative step when the scope fails */

@@ -46,6 +46,6 @@ export const reviewPrFile: Step = {
 	description:
 		"Review a single changed file for correctness, security, quality — emit inline comments",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

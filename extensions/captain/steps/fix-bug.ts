@@ -26,6 +26,6 @@ export const fixBug: Step = {
 	tools: ["read", "bash", "edit", "write"],
 	description: "Apply the diagnosed fix to the codebase",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

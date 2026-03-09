@@ -38,7 +38,7 @@ export const fixReviewIssues: Step = {
 	prompt,
 	// Gate: tests must pass + review issues resolved
 	gate: allOf(bunTest, regexCI("review.passed.*yes")),
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 	maxTurns: 20,
 };

@@ -280,6 +280,7 @@ async function executeStep(
 		status: "running",
 		output: "",
 		elapsed: 0,
+		toolCount: (step.tools ?? ["read", "bash", "edit", "write"]).length,
 	};
 
 	try {
@@ -304,7 +305,7 @@ async function executeStep(
 
 // OnFail coverage in gateCheck (container-level gate failures — sequential, pool, parallel):
 // OnFail is now a function (ctx) => OnFailResult. Decision is evaluated per failure.
-// retry ✓  retryWithDelay ✓  skip ✓  warn ✓  fallback ✓
+// retry ✓  retryWithDelay ✓  fail ✓  skip ✓  warn ✓  fallback ✓
 async function gateCheck(
 	output: string,
 	results: StepResult[],
@@ -344,20 +345,12 @@ async function gateCheck(
 	const decision = await onFail({
 		reason: gateResult.reason,
 		retryCount,
+		stepCount: retryCount + 1,
 		output,
 	});
 
 	switch (decision.action) {
-		case "retry":
-		case "retryWithDelay": {
-			const max = decision.max ?? 3;
-			if (retryCount >= max) {
-				gateStepResult.error = `Gate failed after ${max} retries: ${gateResult.reason}`;
-				return { output, results: [...results, gateStepResult] };
-			}
-			if (decision.action === "retryWithDelay") {
-				await new Promise((r) => setTimeout(r, decision.delayMs));
-			}
+		case "retry": {
 			const retried = await rerunFn();
 			return gateCheck(
 				retried.output,
@@ -370,6 +363,10 @@ async function gateCheck(
 				retryCount + 1,
 			);
 		}
+
+		case "fail":
+			gateStepResult.error = `Gate failed: ${gateResult.reason}`;
+			return { output, results: [...results, gateStepResult] };
 
 		case "skip":
 			gateStepResult.status = "skipped";
@@ -469,8 +466,15 @@ async function executePool(
 				cwd: wt?.worktreePath ?? ectx.cwd,
 				stepGroup: poolGroup,
 			};
+			// Tag each pool instance with its index so they get unique labels in
+			// currentSteps/results — without this all N instances share one label
+			// and the Set collapses them into a single entry.
+			const taggedStep =
+				pool.count > 1 && pool.step.kind === "step"
+					? { ...pool.step, label: `${pool.step.label} [${i + 1}]` }
+					: pool.step;
 			return executeRunnable(
-				pool.step,
+				taggedStep,
 				`${input}\n[Branch ${i + 1} of ${pool.count}]`,
 				original,
 				branchCtx,
@@ -665,7 +669,7 @@ async function applyTransform(
 
 // OnFail coverage in handleFailure (step-level gate failures):
 // OnFail is now a function (ctx) => OnFailResult. Decision is evaluated per failure.
-// retry ✓  retryWithDelay ✓  skip ✓  warn ✓  fallback ✓
+// retry ✓  retryWithDelay ✓  fail ✓  skip ✓  warn ✓  fallback ✓
 async function handleFailure(
 	step: Step,
 	input: string,
@@ -685,26 +689,14 @@ async function handleFailure(
 	const decision = await onFail({
 		reason: gateResult.reason,
 		retryCount,
+		stepCount: retryCount + 1,
 		output: lastOutput,
 	});
 
 	switch (decision.action) {
-		case "retry":
-		case "retryWithDelay": {
-			const max = decision.max ?? 3;
-			if (retryCount >= max) {
-				return {
-					status: "failed",
-					output: lastOutput,
-					error: `Gate failed after ${max} retries: ${gateResult.reason}`,
-				};
-			}
-			if (decision.action === "retryWithDelay") {
-				await new Promise((r) => setTimeout(r, decision.delayMs));
-			}
-			const retryPrompt = `${step.prompt}\n\n[RETRY ${retryCount + 1}/${max}: Previous attempt failed gate: ${gateResult.reason}]\n\nPrevious output:\n${lastOutput.slice(0, 1000)}`;
-			// Strip gate/onFail so the retry step doesn't recursively spawn its own
-			// retry budget — the gate is evaluated here, in the outer handleFailure loop.
+		case "retry": {
+			const retryPrompt = `${step.prompt}\n\n[RETRY ${retryCount + 1}: Previous attempt failed gate: ${gateResult.reason}]\n\nPrevious output:\n${lastOutput.slice(0, 1000)}`;
+			// Strip gate/onFail — the gate is re-evaluated here, in the outer loop.
 			const retryStep: Step = {
 				...step,
 				prompt: retryPrompt,
@@ -741,6 +733,13 @@ async function handleFailure(
 				retryCount + 1,
 			);
 		}
+
+		case "fail":
+			return {
+				status: "failed",
+				output: lastOutput,
+				error: `Gate failed: ${gateResult.reason}`,
+			};
 
 		case "skip":
 			return {

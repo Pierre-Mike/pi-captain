@@ -53,6 +53,6 @@ export const shredAndScore: Step = {
 	description:
 		"Score complexity and re-split any unit above the Haiku-safe threshold",
 	prompt,
-	onFail: retry(3),
+	onFail: retry,
 	transform: { kind: "full" },
 };

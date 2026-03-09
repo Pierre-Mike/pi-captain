@@ -21,6 +21,6 @@ export const summarize: Step = {
 	prompt,
 	gate: ({ output }) =>
 		output.length > 100 ? true : "Summary is too short (< 100 chars)",
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

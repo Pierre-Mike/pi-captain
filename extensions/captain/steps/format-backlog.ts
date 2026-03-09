@@ -72,6 +72,6 @@ export const formatBacklog: Step = {
 	description:
 		"Synthesize full hierarchy into a BACKLOG.md living decomposition artifact",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

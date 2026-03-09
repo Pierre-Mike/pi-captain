@@ -41,6 +41,6 @@ export const fetchPrMetadataAuthFailure: Step = {
 	description:
 		"Assert that missing/empty GITHUB_TOKEN throws AuthError before any API call is made",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

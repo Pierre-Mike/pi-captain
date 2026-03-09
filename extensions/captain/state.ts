@@ -1,22 +1,12 @@
 // ── CaptainState — All mutable runtime state and file I/O ─────────────────
-// Encapsulates pipelines and session reconstruction in one place.
+// Encapsulates pipelines and in-memory state.
 
 import { existsSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
-import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { deserializeRunnable } from "./deserialize.js";
 import * as builtinPipelines from "./pipelines/index.js";
-import type { CaptainDetails, PipelineState, Runnable } from "./types.js";
+import type { PipelineState, Runnable } from "./types.js";
 import { describeRunnable } from "./utils/index.js";
-
-const CAPTAIN_TOOLS = new Set([
-	"captain_define",
-	"captain_load",
-	"captain_run",
-	"captain_list",
-	"captain_status",
-	"captain_generate",
-]);
 
 export class CaptainState {
 	pipelines: Record<string, { spec: Runnable }> = {};
@@ -32,39 +22,6 @@ export class CaptainState {
 			const name = `captain:${kebab}`;
 			this.builtinPresetMap[name] = { pipeline: mod.pipeline };
 		}
-	}
-
-	// ── Snapshot ─────────────────────────────────────────────────────────
-
-	snapshot(lastRun?: PipelineState): CaptainDetails {
-		// Strip function values (gate, onFail) so the snapshot is structuredClone-safe.
-		// JSON round-trip removes functions (they become undefined → dropped).
-		const stripFns = <T>(v: T): T =>
-			JSON.parse(
-				JSON.stringify(v, (_k, val) =>
-					typeof val === "function" ? undefined : val,
-				),
-			);
-
-		const pipelines: Record<string, { spec: Runnable }> = {};
-		for (const [name, p] of Object.entries(this.pipelines)) {
-			pipelines[name] = { spec: stripFns(p.spec) };
-		}
-
-		let lastRunSnapshot: CaptainDetails["lastRun"] | undefined;
-		if (lastRun) {
-			lastRunSnapshot = {
-				name: lastRun.name,
-				state: {
-					...stripFns(lastRun),
-					// Restore non-serializable runtime collections
-					currentSteps: new Set(),
-					currentStepStreams: new Map(),
-				},
-			};
-		}
-
-		return { pipelines, lastRun: lastRunSnapshot };
 	}
 
 	// ── Preset Discovery & Loading ────────────────────────────────────────
@@ -138,40 +95,6 @@ export class CaptainState {
 			return this.loadTsPipelineFile(filePath);
 		}
 		return { ...this.loadPipelineFile(filePath), source: filePath };
-	}
-
-	// ── Session Reconstruction ────────────────────────────────────────────
-
-	private applyCaptainDetails(d: CaptainDetails): void {
-		this.pipelines = d.pipelines ?? this.pipelines;
-		if (d.lastRun) {
-			const s = d.lastRun.state as PipelineState & {
-				currentSteps?: unknown;
-				currentStepStreams?: unknown;
-			};
-			this.runningState = {
-				...s,
-				currentSteps:
-					s.currentSteps instanceof Set ? s.currentSteps : new Set(),
-				currentStepStreams:
-					s.currentStepStreams instanceof Map
-						? s.currentStepStreams
-						: new Map(),
-			};
-		}
-	}
-
-	reconstruct(ctx: ExtensionContext): void {
-		this.pipelines = {};
-		this.runningState = null;
-
-		for (const entry of ctx.sessionManager.getBranch()) {
-			if (entry.type !== "message" || entry.message.role !== "toolResult")
-				continue;
-			if (!CAPTAIN_TOOLS.has(entry.message.toolName)) continue;
-			const d = entry.message.details as CaptainDetails | undefined;
-			if (d) this.applyCaptainDetails(d);
-		}
 	}
 
 	// ── Pipeline List Helpers ─────────────────────────────────────────────

@@ -16,7 +16,6 @@ function listPresets(state: CaptainState, _cwd: string) {
 					text: "No presets found. Add .ts modules to pipelines/ or .json files to .pi/pipelines/",
 				},
 			],
-			details: state.snapshot(),
 		};
 	}
 	return {
@@ -26,7 +25,6 @@ function listPresets(state: CaptainState, _cwd: string) {
 				text: `Available pipeline presets:\n${presets.map((p) => `  • ${p.name} (${p.source})`).join("\n")}`,
 			},
 		],
-		details: state.snapshot(),
 	};
 }
 
@@ -64,7 +62,6 @@ async function loadPreset(state: CaptainState, name: string, cwd: string) {
 					text: `Loaded pipeline "${resolved.name}"${resolved.source ? ` from ${resolved.source}` : ""}\n\n${summary}`,
 				},
 			],
-			details: state.snapshot(),
 		};
 	} catch (err) {
 		return {

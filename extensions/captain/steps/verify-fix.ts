@@ -27,6 +27,6 @@ export const verifyFix: Step = {
 	prompt,
 	// Gate: test suite must pass after the fix
 	gate: command("bun test"),
-	onFail: retry(3),
+	onFail: retry,
 	transform: { kind: "full" },
 };

@@ -112,6 +112,6 @@ export const synthesizeRequirements: Step = {
 				"real, actionable spec? Rate 0-1. Threshold: 0.7",
 		),
 	),
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

@@ -37,6 +37,6 @@ export const parsePrInput: Step = {
 	tools: ["read", "bash", "edit", "write"],
 	description: "Parse 'owner/repo#N' into owner, repo, and PR number",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

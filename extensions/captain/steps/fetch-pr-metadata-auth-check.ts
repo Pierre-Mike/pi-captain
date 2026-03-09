@@ -36,6 +36,6 @@ export const fetchPrMetadataAuthCheck: Step = {
 	description:
 		"Read GITHUB_TOKEN from the environment and throw a typed AuthError if absent or empty",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

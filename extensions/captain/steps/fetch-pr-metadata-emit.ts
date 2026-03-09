@@ -60,6 +60,6 @@ export const fetchPrMetadataEmit: Step = {
 	description:
 		"Map raw GitHub API JSON to a typed PrMetadata object — validate required fields, throw ParseError on missing data",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

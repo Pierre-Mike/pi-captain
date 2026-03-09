@@ -31,6 +31,6 @@ export const diagnoseBug: Step = {
 		output.includes("/") || output.includes(".ts") || output.includes(".js")
 			? true
 			: "Diagnosis must reference a specific file path",
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

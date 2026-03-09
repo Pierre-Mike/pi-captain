@@ -43,6 +43,8 @@ export interface OnFailCtx {
 	reason: string;
 	/** How many retries have already been attempted (0 on first failure) */
 	retryCount: number;
+	/** Total number of times the step has run so far (retryCount + 1) */
+	stepCount: number;
 	/** The last output produced before the failure */
 	output: string;
 }
@@ -50,33 +52,34 @@ export interface OnFailCtx {
 /**
  * The decision an OnFail handler returns — what to do after a gate fails.
  *
- * - `retry`            — re-run the step/scope immediately
- * - `retryWithDelay`   — re-run after `delayMs` milliseconds
- * - `skip`             — mark as skipped and continue with empty output
- * - `warn`             — log a warning but treat as passed and continue
- * - `fallback`         — run an alternative Step instead
+ * - `retry`    — re-run the step/scope (any delay is the function's responsibility)
+ * - `fail`     — abort the step and mark it as failed
+ * - `skip`     — mark as skipped and continue with empty output
+ * - `warn`     — log a warning but treat as passed and continue
+ * - `fallback` — run an alternative Step instead
  */
 export type OnFailResult =
-	| { action: "retry"; max?: number }
-	| { action: "retryWithDelay"; max?: number; delayMs: number }
+	| { action: "retry" }
+	| { action: "fail" }
 	| { action: "skip" }
 	| { action: "warn" }
 	| { action: "fallback"; step: Step };
 
 /**
- * Failure handling strategy — a plain function that receives failure context
- * and returns what to do next. Mirrors the Gate function signature style:
- * simple cases are one-liners; complex strategies have full programmatic control.
+ * Failure handling strategy — a pure function that receives failure context
+ * and returns what to do next. All behaviour (retry limits, delays) lives
+ * inside the function; the executor only acts on the returned decision.
  *
  * @example
  * // Built-in presets
- * onFail: retry(3)
- * onFail: retryWithDelay(3, 2000)
+ * onFail: retry()                                         // up to 3 times, then fail
+ * onFail: retry(2)                                        // up to 2 times, then fail
+ * onFail: retryWithDelay(3, 2000)                         // delay is awaited inside the fn
  * onFail: fallback(myStep)
  * onFail: skip
  * onFail: warn
  *
- * // Custom: retry twice, then warn
+ * // Custom inline — full control via ctx
  * onFail: ({ retryCount }) => retryCount < 2 ? { action: "retry" } : { action: "warn" }
  */
 export type OnFail = (ctx: OnFailCtx) => OnFailResult | Promise<OnFailResult>;
@@ -180,6 +183,7 @@ export interface StepResult {
 	error?: string;
 	elapsed: number; // ms
 	group?: string; // parallel/pool group label this step belongs to
+	toolCount?: number; // number of tools available to this step
 }
 
 export interface PipelineState {
@@ -194,13 +198,4 @@ export interface PipelineState {
 	startTime?: number;
 	endTime?: number;
 	finalOutput?: string;
-}
-
-/** Persisted state for session reconstruction */
-export interface CaptainDetails {
-	pipelines: Record<string, { spec: Runnable }>;
-	lastRun?: {
-		name: string;
-		state: PipelineState;
-	};
 }

@@ -50,7 +50,7 @@ export const tddRed: Step = {
 	prompt,
 	// Gate: tests must exit non-zero (all failing = success for RED phase)
 	gate: command("bun test 2>&1; test $? -ne 0"),
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 	maxTurns: 15,
 };

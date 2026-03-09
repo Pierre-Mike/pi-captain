@@ -85,7 +85,6 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 								].join("\n"),
 							},
 						],
-						details: state.snapshot(),
 					};
 				}
 
@@ -112,7 +111,6 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 							].join("\n"),
 						},
 					],
-					details: state.snapshot(),
 				};
 			} catch (err) {
 				return {

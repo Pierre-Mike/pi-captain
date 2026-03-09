@@ -64,20 +64,20 @@ const GATE_CATALOG = `
 
 const ONFAIL_CATALOG = `
 ## Available OnFail Strategies
-OnFail is a function (ctx) => OnFailResult. Use the presets below or write inline:
+OnFail is a pure function (ctx: OnFailCtx) => OnFailResult.
+All behaviour (retry limits, delays) lives inside the function — the executor only acts on the returned decision.
 
 Presets (imported from gates/on-fail):
-- retry(max?)                    — Retry the step up to max times (default 3)
-- retryWithDelay(max?, delayMs)  — Retry with delay between attempts
+- retry                          — Retry up to 3 times, then fail (plain OnFail value, no call needed)
+- retryWithDelay(max?, delayMs)  — Same but awaits delayMs inside the function before returning retry
 - skip                           — Skip on failure, pass empty output downstream
 - warn                           — Log warning but pass output through (non-blocking)
 - fallback(step)                 — Run an alternative step on failure
 
-Custom inline (for JSON pipelines, use the serialized action form):
-- { action: "retry", max: <N> }
-- { action: "retryWithDelay", max: <N>, delayMs: <ms> }
-- { action: "skip" }
-- { action: "warn" }
+Custom inline:
+- ({ retryCount }) => retryCount < 2 ? { action: "retry" } : { action: "warn" }
+- { action: "retry" }   { action: "fail" }   { action: "skip" }   { action: "warn" }
+- ({ retryCount }) => retryCount < N ? { action: "retry" } : { action: "fail" }  // custom max
 - { action: "fallback", step: <Step> }
 `;
 

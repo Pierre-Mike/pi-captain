@@ -33,6 +33,6 @@ export const reproduceBug: Step = {
 			? true
 			: "Reproduction must show an error, failure, or explicit 'reproduce' evidence";
 	},
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };

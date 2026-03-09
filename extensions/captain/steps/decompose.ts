@@ -46,6 +46,6 @@ export const decompose: Step = {
 	temperature: 0.2,
 	description: "Recursively split the spec into atomic sub-tasks",
 	prompt,
-	onFail: retry(2),
+	onFail: retry,
 	transform: { kind: "full" },
 };
