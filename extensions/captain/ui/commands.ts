@@ -70,15 +70,15 @@ function buildAdHocStep(prompt: string, flags: Record<string, string>): Step {
 }
 
 /** Ensure a named pipeline is loaded (auto-loads from presets). Returns false if the caller should abort. */
-function ensurePipelineLoaded(
+async function ensurePipelineLoaded(
 	name: string,
 	cwd: string,
 	state: CaptainState,
 	notify: NotifyFn,
-): boolean {
+): Promise<boolean> {
 	if (state.pipelines[name]) return true;
 	try {
-		const resolved = state.resolvePreset(name, cwd);
+		const resolved = await state.resolvePreset(name, cwd);
 		if (!resolved) {
 			notify(
 				`Pipeline "${name}" not found. Use /captain-load to see available presets.`,
@@ -98,17 +98,17 @@ function ensurePipelineLoaded(
 }
 
 /** Parse and validate args for /captain-run; returns null if the handler should abort */
-function parseCaptainRunArgs(
+async function parseCaptainRunArgs(
 	args: string,
 	state: CaptainState,
 	cwd: string,
 	notify: NotifyFn,
-): {
+): Promise<{
 	name: string;
 	input: string;
 	stepFilter: string | undefined;
 	specToRun: Runnable;
-} | null {
+} | null> {
 	const raw = args?.trim() ?? "";
 	const { stepFilter, cleanedArgs } = parseStepFlag(raw);
 	const parts = cleanedArgs.split(/\s+/);
@@ -137,7 +137,7 @@ function parseCaptainRunArgs(
 		);
 		return null;
 	}
-	if (!ensurePipelineLoaded(name, cwd, state, notify)) return null;
+	if (!(await ensurePipelineLoaded(name, cwd, state, notify))) return null;
 
 	let specToRun: Runnable | undefined = state.pipelines[name].spec;
 	if (stepFilter) {
@@ -185,18 +185,19 @@ async function buildEctx(
 		confirm: ctx.hasUI ? (t, b) => ctx.ui.confirm(t, b) : undefined,
 		pipelineName: stateName,
 		onStepStart: (label) => {
-			pipelineState.currentStep = label;
-			pipelineState.currentStepStream = undefined;
+			pipelineState.currentSteps.add(label);
+			pipelineState.currentStepStreams.delete(label);
 			updateWidget(ctx, pipelineState);
-			ctx.ui.setStatus("captain", `🚀 ${stateName} → ${label}`);
+			const running = [...pipelineState.currentSteps].join(", ");
+			ctx.ui.setStatus("captain", `🚀 ${stateName} → ${running}`);
 		},
-		onStepStream: (text) => {
-			pipelineState.currentStepStream = text;
+		onStepStream: (label, text) => {
+			pipelineState.currentStepStreams.set(label, text);
 			updateWidget(ctx, pipelineState);
 		},
 		onStepEnd: (result) => {
-			pipelineState.currentStep = undefined;
-			pipelineState.currentStepStream = undefined;
+			pipelineState.currentSteps.delete(result.label);
+			pipelineState.currentStepStreams.delete(result.label);
 			pipelineState.results.push(result);
 			updateWidget(ctx, pipelineState);
 		},
@@ -295,7 +296,7 @@ export function registerCommands(pi: ExtensionAPI, state: CaptainState) {
 				return;
 			}
 			try {
-				const resolved = state.resolvePreset(name, ctx.cwd);
+				const resolved = await state.resolvePreset(name, ctx.cwd);
 				if (resolved) {
 					ctx.ui.notify(
 						`Pipeline "${name}" (${resolved.source ?? "preset"} — not yet loaded):\n${describeRunnable(resolved.spec, 0)}`,
@@ -338,8 +339,11 @@ export function registerCommands(pi: ExtensionAPI, state: CaptainState) {
 				.filter((n) => n.startsWith(prefix))
 				.map((n) => ({ value: n, label: n })),
 		handler: async (args, ctx) => {
-			const parsed = parseCaptainRunArgs(args, state, ctx.cwd, (msg, level) =>
-				ctx.ui.notify(msg, level),
+			const parsed = await parseCaptainRunArgs(
+				args,
+				state,
+				ctx.cwd,
+				(msg, level) => ctx.ui.notify(msg, level),
 			);
 			if (!parsed) return;
 			const { name, input, stepFilter, specToRun } = parsed;
@@ -351,6 +355,8 @@ export function registerCommands(pi: ExtensionAPI, state: CaptainState) {
 				spec: specToRun,
 				status: "running",
 				results: [],
+				currentSteps: new Set(),
+				currentStepStreams: new Map(),
 				startTime: Date.now(),
 			};
 			state.runningState = pipelineState;
@@ -480,6 +486,8 @@ export function registerCommands(pi: ExtensionAPI, state: CaptainState) {
 				spec: stepSpec,
 				status: "running",
 				results: [],
+				currentSteps: new Set(),
+				currentStepStreams: new Map(),
 				startTime: Date.now(),
 			};
 			state.runningState = pipelineState;

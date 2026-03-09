@@ -908,7 +908,9 @@ describe("executeRunnable: lifecycle callbacks", () => {
 		const { executeRunnable: streamExecute } = await import("./executor.js");
 
 		const streamed: string[] = [];
-		const ctx = makeCtx({ onStepStream: (text) => streamed.push(text) });
+		const ctx = makeCtx({
+			onStepStream: (_label, text) => streamed.push(text),
+		});
 
 		await streamExecute(makeStep("stream-test"), "", "", ctx);
 		expect(streamed).toContain("hello ");

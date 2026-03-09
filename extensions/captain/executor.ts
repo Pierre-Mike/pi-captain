@@ -59,8 +59,8 @@ export interface ExecutorContext {
 	signal?: AbortSignal;
 	onStepStart?: (label: string) => void;
 	onStepEnd?: (result: StepResult) => void;
-	/** Called with the accumulated text output as each delta arrives */
-	onStepStream?: (text: string) => void;
+	/** Called with the step label and accumulated text output as each delta arrives */
+	onStepStream?: (label: string, text: string) => void;
 	pipelineName: string;
 	/** Group label for steps running inside a parallel/pool — set by the executor */
 	stepGroup?: string;
@@ -227,7 +227,7 @@ async function runStepCore(
 			event.assistantMessageEvent.type === "text_delta"
 		) {
 			output += event.assistantMessageEvent.delta;
-			ectx.onStepStream?.(output);
+			ectx.onStepStream?.(step.label, output);
 		}
 	});
 
