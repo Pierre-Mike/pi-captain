@@ -180,7 +180,8 @@ $INPUT`,
 			return "Output is not valid JSON";
 		}
 	},
-	onFail: retry(2),
+	// ⚠️  flash sometimes wraps JSON in markdown — this should not happen with a strict prompt
+	onFail: warn,
 	transform: { kind: "extract", key: "winner" },
 };
 
