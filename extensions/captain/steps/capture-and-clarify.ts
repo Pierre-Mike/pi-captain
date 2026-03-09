@@ -5,6 +5,39 @@
 import { none, retry } from "../gates/index.js";
 import type { Step } from "../types.js";
 
+const prompt = `
+You are the Clarifier. Take this raw requirement and produce a structured spec.
+
+Requirement:
+$ORIGINAL
+
+Produce a spec in this exact format:
+
+## STRUCTURED SPEC
+
+### Title
+(concise name)
+
+### Inputs
+- (what the system receives)
+
+### Outputs
+- (what the system produces)
+
+### Acceptance Criteria
+1. (testable criterion)
+2. ...
+
+### Constraints
+- (limitations, boundaries)
+
+### Edge Cases
+- (unusual scenarios to handle)
+
+Be precise. Eliminate all ambiguity. If the requirement is vague, make reasonable
+assumptions and state them explicitly.
+`;
+
 export const captureAndClarify: Step = {
 	kind: "step",
 	label: "Capture and Clarify",
@@ -12,19 +45,7 @@ export const captureAndClarify: Step = {
 	model: "sonnet",
 	temperature: 0.3,
 	description: "Transform raw requirement into a structured spec",
-	prompt:
-		"You are the Clarifier. Take this raw requirement and produce a structured spec.\n\n" +
-		"Requirement:\n$ORIGINAL\n\n" +
-		"Produce a spec in this exact format:\n\n" +
-		"## STRUCTURED SPEC\n\n" +
-		"### Title\n(concise name)\n\n" +
-		"### Inputs\n- (what the system receives)\n\n" +
-		"### Outputs\n- (what the system produces)\n\n" +
-		"### Acceptance Criteria\n1. (testable criterion)\n2. ...\n\n" +
-		"### Constraints\n- (limitations, boundaries)\n\n" +
-		"### Edge Cases\n- (unusual scenarios to handle)\n\n" +
-		"Be precise. Eliminate all ambiguity. If the requirement is vague, " +
-		"make reasonable assumptions and state them explicitly.",
+	prompt,
 	gate: none,
 	onFail: retry(2),
 	transform: { kind: "full" },

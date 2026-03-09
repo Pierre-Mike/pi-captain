@@ -6,32 +6,40 @@
 import { none, retry } from "../gates/index.js";
 import type { Step } from "../types.js";
 
+const prompt = `
+You have PR metadata from the previous step.
+
+Fetch all changed files for the PR using the GitHub CLI:
+
+1. Run: gh pr view {prNumber} --repo {owner}/{repo} --json files 2>/dev/null
+   If that fails, run: gh pr diff {prNumber} --repo {owner}/{repo} 2>/dev/null
+2. Parse the output into a structured list of changed files
+
+For each changed file emit:
+
+### FILE-N: [path]
+- Status: [added|modified|removed|renamed]
+- Additions: N
+- Deletions: N
+- Language: [typescript|javascript|python|go|rust|other]
+- Diff (first 200 lines):
+  \`\`\`diff
+  [diff content]
+  \`\`\`
+
+End with:
+TOTAL FILES: N
+TOTAL ADDITIONS: N
+TOTAL DELETIONS: N
+`;
+
 export const fetchPrFiles: Step = {
 	kind: "step",
 	label: "Fetch PR Changed Files",
 	tools: ["read", "bash", "edit", "write"],
 	description:
 		"Fetch all changed files and diffs via GitHub CLI — emit structured file list for parallel review",
-	prompt:
-		"You have PR metadata from the previous step.\n\n" +
-		"Fetch all changed files for the PR using the GitHub CLI:\n\n" +
-		"1. Run: gh pr view {prNumber} --repo {owner}/{repo} --json files 2>/dev/null\n" +
-		"   If that fails, run: gh pr diff {prNumber} --repo {owner}/{repo} 2>/dev/null\n" +
-		"2. Parse the output into a structured list of changed files\n\n" +
-		"For each changed file emit:\n\n" +
-		"### FILE-N: [path]\n" +
-		"- Status: [added|modified|removed|renamed]\n" +
-		"- Additions: N\n" +
-		"- Deletions: N\n" +
-		"- Language: [typescript|javascript|python|go|rust|other]\n" +
-		"- Diff (first 200 lines):\n" +
-		"  ```diff\n" +
-		"  [diff content]\n" +
-		"  ```\n\n" +
-		"End with:\n" +
-		"TOTAL FILES: N\n" +
-		"TOTAL ADDITIONS: N\n" +
-		"TOTAL DELETIONS: N",
+	prompt,
 	gate: none,
 	onFail: retry(2),
 	transform: { kind: "full" },

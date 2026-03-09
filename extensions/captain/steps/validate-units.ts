@@ -6,6 +6,38 @@ import { fallback, regexCI } from "../gates/index.js";
 import type { Step } from "../types.js";
 import { reShred } from "./re-shred.js";
 
+const prompt = `
+You are the Validator. You are a small, fast model.
+For each unit below, answer ONE question:
+"Given this goal, input, and constraints — can I produce the expected output
+in a single pass with no ambiguity?"
+
+Units:
+$INPUT
+
+For each unit output exactly:
+### UNIT-N: name
+- Verdict: YES or NO
+- Reason: (one sentence)
+- Dependencies: (pass through from input)
+
+Then output a summary:
+VALIDATED: X / Y
+FAILED UNITS: (comma-separated list, or "none")
+
+If all units passed, end with exactly:
+ALL VALIDATED: YES
+
+If any failed, end with exactly:
+ALL VALIDATED: NO
+
+Finally, output a JSON summary block:
+\`\`\`json
+{"validated": N, "total": N, "all_validated": true, "failed_units": []}
+\`\`\`
+(Set "all_validated" to false and list failing unit names in "failed_units" if any failed.)
+`;
+
 export const validateUnits: Step = {
 	kind: "step",
 	label: "Validate",
@@ -14,29 +46,7 @@ export const validateUnits: Step = {
 	temperature: 0,
 	description:
 		"Flash dry-run: confirm each unit can be executed in a single pass with no ambiguity",
-	prompt:
-		"You are the Validator. You are a small, fast model.\n" +
-		"For each unit below, answer ONE question:\n" +
-		'"Given this goal, input, and constraints — can I produce the expected output ' +
-		'in a single pass with no ambiguity?"\n\n' +
-		"Units:\n$INPUT\n\n" +
-		"For each unit output exactly:\n" +
-		"### UNIT-N: name\n" +
-		"- Verdict: YES or NO\n" +
-		"- Reason: (one sentence)\n" +
-		"- Dependencies: (pass through from input)\n\n" +
-		"Then output a summary:\n" +
-		"VALIDATED: X / Y\n" +
-		'FAILED UNITS: (comma-separated list, or "none")\n\n' +
-		"If all units passed, end with exactly:\n" +
-		"ALL VALIDATED: YES\n\n" +
-		"If any failed, end with exactly:\n" +
-		"ALL VALIDATED: NO\n\n" +
-		"Finally, output a JSON summary block:\n" +
-		"```json\n" +
-		'{"validated": N, "total": N, "all_validated": true, "failed_units": []}\n' +
-		"```\n" +
-		'(Set "all_validated" to false and list failing unit names in "failed_units" if any failed.)',
+	prompt,
 	gate: regexCI("all.validated.*yes"),
 	onFail: fallback(reShred),
 	transform: { kind: "full" },

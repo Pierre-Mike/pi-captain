@@ -7,6 +7,37 @@
 import { none, retry } from "../gates/index.js";
 import type { Step } from "../types.js";
 
+const prompt = `
+You are a senior code reviewer. Review this changed file from the PR.
+
+PR metadata and changed file:
+$INPUT
+
+Review the diff for:
+
+1. **Correctness** — logic errors, off-by-one errors, missing error handling, race conditions
+2. **Security** — injection risks, auth bypass, secret exposure, unsafe deserialization
+3. **Code quality** — naming clarity, function length, duplication, coupling
+4. **Type safety** — any 'any' casts, missing null checks, incorrect types
+5. **Tests** — are the changes covered? are existing tests still valid?
+
+For each finding:
+
+### FINDING-N: [title]
+- File: [path]
+- Line: [line number or range]
+- Severity: [CRITICAL|HIGH|MEDIUM|LOW|INFO]
+- Category: [correctness|security|quality|types|tests]
+- Issue: [clear description]
+- Suggestion: [concrete fix or improvement]
+- Inline comment: [GitHub PR comment text, ready to post]
+
+End with:
+FILE: [path]
+FINDINGS: N
+CRITICAL: N | HIGH: N | MEDIUM: N | LOW: N
+`;
+
 export const reviewPrFile: Step = {
 	kind: "step",
 	label: "Review PR File",
@@ -14,28 +45,7 @@ export const reviewPrFile: Step = {
 	temperature: 0.3,
 	description:
 		"Review a single changed file for correctness, security, quality — emit inline comments",
-	prompt:
-		"You are a senior code reviewer. Review this changed file from the PR.\n\n" +
-		"PR metadata and changed file:\n$INPUT\n\n" +
-		"Review the diff for:\n\n" +
-		"1. **Correctness** — logic errors, off-by-one errors, missing error handling, race conditions\n" +
-		"2. **Security** — injection risks, auth bypass, secret exposure, unsafe deserialization\n" +
-		"3. **Code quality** — naming clarity, function length, duplication, coupling\n" +
-		"4. **Type safety** — any 'any' casts, missing null checks, incorrect types\n" +
-		"5. **Tests** — are the changes covered? are existing tests still valid?\n\n" +
-		"For each finding:\n\n" +
-		"### FINDING-N: [title]\n" +
-		"- File: [path]\n" +
-		"- Line: [line number or range]\n" +
-		"- Severity: [CRITICAL|HIGH|MEDIUM|LOW|INFO]\n" +
-		"- Category: [correctness|security|quality|types|tests]\n" +
-		"- Issue: [clear description]\n" +
-		"- Suggestion: [concrete fix or improvement]\n" +
-		"- Inline comment: [GitHub PR comment text, ready to post]\n\n" +
-		"End with:\n" +
-		"FILE: [path]\n" +
-		"FINDINGS: N\n" +
-		"CRITICAL: N | HIGH: N | MEDIUM: N | LOW: N",
+	prompt,
 	gate: none,
 	onFail: retry(2),
 	transform: { kind: "full" },

@@ -5,6 +5,42 @@
 import { none, skip } from "../gates/index.js";
 import type { Step } from "../types.js";
 
+const prompt = `
+You are the Tree Formatter. Take these execution layers and produce the final task tree.
+
+Layered units:
+$INPUT
+
+Original requirement:
+$ORIGINAL
+
+Output format:
+
+# Task Tree: <title>
+
+For each execution layer:
+
+## Layer N (parallel | sequential) — <description>
+
+For each unit in the layer:
+
+### UNIT-N: <name> [score: X]
+- Goal: <one sentence>
+- Input: <what it receives>
+- Output: <what it produces>
+- Acceptance Test: <how to verify>
+- Depends on: <UNIT-X or none>
+
+End with:
+
+## Summary
+- Total units: N
+- Execution layers: N
+- Max parallelism: N (largest layer)
+- Critical path length: N (longest dependency chain)
+- All Haiku-safe: YES
+`;
+
 export const formatTree: Step = {
 	kind: "step",
 	label: "Format Tree",
@@ -12,28 +48,7 @@ export const formatTree: Step = {
 	model: "sonnet",
 	temperature: 0.1,
 	description: "Structure layered units into the final nested task tree",
-	prompt:
-		"You are the Tree Formatter. Take these execution layers and produce the final task tree.\n\n" +
-		"Layered units:\n$INPUT\n\n" +
-		"Original requirement:\n$ORIGINAL\n\n" +
-		"Output format:\n\n" +
-		"# Task Tree: <title>\n\n" +
-		"For each execution layer:\n\n" +
-		"## Layer N (parallel | sequential) — <description>\n\n" +
-		"For each unit in the layer:\n\n" +
-		"### UNIT-N: <name> [score: X]\n" +
-		"- Goal: <one sentence>\n" +
-		"- Input: <what it receives>\n" +
-		"- Output: <what it produces>\n" +
-		"- Acceptance Test: <how to verify>\n" +
-		"- Depends on: <UNIT-X or none>\n\n" +
-		"End with:\n\n" +
-		"## Summary\n" +
-		"- Total units: N\n" +
-		"- Execution layers: N\n" +
-		"- Max parallelism: N (largest layer)\n" +
-		"- Critical path length: N (longest dependency chain)\n" +
-		"- All Haiku-safe: YES",
+	prompt,
 	gate: none,
 	onFail: skip,
 	transform: { kind: "full" },
