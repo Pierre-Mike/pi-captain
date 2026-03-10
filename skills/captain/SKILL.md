@@ -201,33 +201,49 @@ export const pipeline: Runnable = {
 ### Parallel — different steps concurrently (each in own git worktree)
 
 ```ts
+import { concat } from "<captain>/merge.js";
+
 export const pipeline: Runnable = {
   kind: "parallel",
   steps: [frontendStep, backendStep],
-  merge: { strategy: "concat" },
+  merge: concat,
 };
 ```
 
 ### Pool — same step × N (each in own git worktree)
 
 ```ts
+import { vote } from "<captain>/merge.js";
+
 export const pipeline: Runnable = {
   kind: "pool",
   step: solveStep,
   count: 3,
-  merge: { strategy: "vote" },
+  merge: vote,
 };
 ```
 
-## Merge Strategies
+## Merge Functions
 
-| Strategy | Behavior |
-|----------|----------|
+`merge` is a plain function `(outputs: string[], ctx) => string | Promise<string>`.
+Import named presets from `merge.js`:
+
+```ts
+import { concat, awaitAll, firstPass, vote, rank } from "<captain>/merge.js";
+```
+
+| Preset | Behavior |
+|--------|----------|
 | `concat` | Join all outputs with separators |
-| `awaitAll` | Wait for all, concatenate |
-| `firstPass` | Take the first successful output |
+| `awaitAll` | Wait for all, concatenate (alias for `concat`) |
+| `firstPass` | Take the first non-empty output |
 | `vote` | LLM picks the best/most common answer |
-| `rank` | LLM ranks outputs and returns the top one |
+| `rank` | LLM ranks outputs and synthesizes the top one |
+
+You can also write inline:
+```ts
+merge: (outputs) => outputs.join("\n---\n")
+```
 
 ## Prompt Variables
 

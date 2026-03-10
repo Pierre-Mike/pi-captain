@@ -356,7 +356,7 @@ transform: async ({ output, ctx }) => {
 {
   kind: "parallel",
   steps: Runnable[],                 // each runs concurrently (own git worktree)
-  merge: { strategy: MergeStrategy },
+  merge: MergeFn,                    // how to combine branch outputs
   gate?: Gate,
   onFail?: OnFail,
   transform?: Transform,
@@ -370,22 +370,36 @@ transform: async ({ output, ctx }) => {
   kind: "pool",
   step: Runnable,                    // replicated N times
   count: number,
-  merge: { strategy: MergeStrategy },
+  merge: MergeFn,                    // how to combine branch outputs
   gate?: Gate,
   onFail?: OnFail,
   transform?: Transform,
 }
 ```
 
-### `MergeStrategy` — combining parallel/pool outputs
+### `MergeFn` — combining parallel/pool outputs
 
-| Strategy | Behaviour |
-|----------|-----------|
-| `"concat"` | Concatenate all outputs in order |
-| `"awaitAll"` | Wait for all, return as structured list |
-| `"firstPass"` | Return the first output that passes its gate |
-| `"vote"` | LLM picks the single best output |
-| `"rank"` | LLM ranks all outputs and returns the top one |
+`MergeFn` is a plain function: `(outputs: string[], ctx: MergeCtx) => string | Promise<string>`.
+
+Import named presets from `merge.js`:
+
+```ts
+import { concat, awaitAll, firstPass, vote, rank } from "<captain>/merge.js";
+```
+
+| Preset | Behaviour |
+|--------|-----------|
+| `concat` | Concatenate all outputs in order |
+| `awaitAll` | Wait for all, return concatenated (alias for `concat`) |
+| `firstPass` | Return the first non-empty output |
+| `vote` | LLM picks the single best output |
+| `rank` | LLM ranks all outputs and synthesizes the top one |
+
+You can also write inline merge functions:
+
+```ts
+merge: (outputs) => outputs.join("\n---\n")
+```
 
 ---
 
@@ -396,6 +410,7 @@ transform: async ({ output, ctx }) => {
 import { retry, skip, warn } from "<captain>/gates/on-fail.js";
 import { bunTest, allOf, outputMinLength, user } from "<captain>/gates/presets.js";
 import { llmFast } from "<captain>/gates/llm.js";
+import { concat } from "<captain>/merge.js";
 import { full, summarize } from "<captain>/transforms/presets.js";
 import type { Runnable } from "<captain>/types.js";
 
@@ -439,7 +454,7 @@ export const pipeline: Runnable = {
           transform: full,
         },
       ],
-      merge: { strategy: "concat" },
+      merge: concat,
     },
     {
       kind: "step",
