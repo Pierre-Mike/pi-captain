@@ -85,6 +85,6 @@ export const renderCanvas: Step = {
 		"Convert the layered task tree into a backlog.canvas file for Obsidian",
 	prompt: CANVAS_PROMPT,
 	gate: command(`bun ${canvasValidator} backlog.canvas`),
-	onFail: retry,
+	onFail: retry(),
 	transform: full,
 };

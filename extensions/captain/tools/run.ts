@@ -1,3 +1,4 @@
+import type { TextContent } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import * as piSdk from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
@@ -41,10 +42,11 @@ function buildCompletionSummary(
 // ── Return shape for the interactive guard ────────────────────────────────────
 type GuardResult = {
 	done: true;
-	result: { content: Array<{ type: string; text: string }>; isError: boolean };
+	result: { content: TextContent[]; details: undefined };
 };
 type SelectCtx = {
 	hasUI: boolean;
+	cwd: string;
 	ui: {
 		select: (t: string, o: string[]) => Promise<string | undefined>;
 		input: (t: string, p: string) => Promise<string | undefined>;
@@ -55,15 +57,15 @@ function cancelled(): GuardResult {
 	return {
 		done: true,
 		result: {
-			content: [{ type: "text", text: "(cancelled)" }],
-			isError: false,
+			content: [{ type: "text" as const, text: "(cancelled)" }],
+			details: undefined,
 		},
 	};
 }
 function guardError(msg: string): GuardResult {
 	return {
 		done: true,
-		result: { content: [{ type: "text", text: msg }], isError: true },
+		result: { content: [{ type: "text" as const, text: msg }], details: undefined },
 	};
 }
 
@@ -80,11 +82,11 @@ async function selectAndAutoLoad(
 			result: {
 				content: [
 					{
-						type: "text",
+						type: "text" as const,
 						text: "No pipelines available. Use captain_define or captain_load first.",
 					},
 				],
-				isError: false,
+				details: undefined,
 			},
 		};
 	}
@@ -99,7 +101,7 @@ async function selectAndAutoLoad(
 	const name = parsePipelineSelectOption(selectedOption);
 	if (!state.pipelines[name]) {
 		try {
-			state.resolvePreset(name);
+			state.resolvePreset(name, ctx.cwd);
 		} catch (err) {
 			return guardError(err instanceof Error ? err.message : String(err));
 		}
@@ -162,6 +164,7 @@ function makeStepHooks(
 			updateWidget(ctx, pipelineState);
 			onUpdate?.({
 				content: [{ type: "text", text: `⏳ Running step: ${label}...` }],
+				details: undefined,
 			});
 			const running = [...pipelineState.currentSteps].join(", ");
 			ctx.ui.setStatus("captain", `🚀 ${resolvedName} → ${running}`);
@@ -182,6 +185,7 @@ function makeStepHooks(
 						text: `${statusIcon(result.status)} ${result.label}: ${result.status} (${(result.elapsed / 1000).toFixed(1)}s)`,
 					},
 				],
+				details: undefined,
 			});
 		},
 	};
@@ -202,7 +206,7 @@ function buildEctx(
 	return {
 		exec: (cmd, args, opts) => pi.exec(cmd, args, opts),
 
-		model: ctx.model,
+		model: ctx.model!,
 		modelRegistry: ctx.modelRegistry,
 		apiKey,
 		cwd: ctx.cwd,
@@ -225,20 +229,19 @@ async function runPipeline(
 	updateWidget: (ctx: ExecCtx, s: PipelineState) => void,
 	clearWidget: (ctx: ExecCtx) => void,
 ): Promise<{
-	content: Array<{ type: string; text: string }>;
-	isError?: boolean;
-	details?: unknown;
+	content: TextContent[];
+	details: undefined;
 }> {
 	const pipeline = state.pipelines[resolvedName];
 	if (!pipeline) {
 		return {
 			content: [
 				{
-					type: "text",
+					type: "text" as const,
 					text: `Error: pipeline "${resolvedName}" not found. Define it first with captain_define.`,
 				},
 			],
-			isError: true,
+			details: undefined,
 		};
 	}
 
@@ -254,16 +257,23 @@ async function runPipeline(
 	state.runningState = pipelineState;
 	updateWidget(ctx, pipelineState);
 
+	if (!ctx.model) {
+		return {
+			content: [{ type: "text" as const, text: "Error: no model available" }],
+			details: undefined,
+		};
+	}
+
 	const apiKey = await ctx.modelRegistry.getApiKey(ctx.model);
 	if (!apiKey) {
 		return {
 			content: [
 				{
-					type: "text",
+					type: "text" as const,
 					text: "Error: no API key available for the current model",
 				},
 			],
-			isError: true,
+			details: undefined,
 		};
 	}
 
@@ -296,7 +306,7 @@ async function runPipeline(
 		return {
 			content: [
 				{
-					type: "text",
+					type: "text" as const,
 					text: buildCompletionSummary(
 						resolvedName,
 						output,
@@ -306,6 +316,7 @@ async function runPipeline(
 					),
 				},
 			],
+			details: undefined,
 		};
 	} catch (err) {
 		pipelineState.status = "failed";
@@ -315,9 +326,9 @@ async function runPipeline(
 		const errMsg = err instanceof Error ? err.message : String(err);
 		return {
 			content: [
-				{ type: "text", text: `Pipeline "${resolvedName}" failed: ${errMsg}` },
+				{ type: "text" as const, text: `Pipeline "${resolvedName}" failed: ${errMsg}` },
 			],
-			isError: true,
+			details: undefined,
 		};
 	}
 }
@@ -396,7 +407,7 @@ export function registerRunTool(
 		renderResult: (result, { isPartial }, theme) => {
 			if (isPartial)
 				return new Text(theme.fg("accent", "● Running pipeline..."), 0, 0);
-			if (result.isError)
+			if (result.content[0] && (result.content[0] as any).text?.startsWith("Error"))
 				return new Text(theme.fg("error", "✗ Pipeline failed"), 0, 0);
 			return new Text(theme.fg("success", "✓ Done"), 0, 0);
 		},

@@ -85,7 +85,7 @@ export function containerGateInfo(
 	onFail: OnFail | undefined,
 ): string {
 	return gate
-		? ` (gate: ${gate.name || "fn"}, onFail: ${onFail?.action ?? "none"})`
+		? ` (gate: ${gate.name || "fn"}, onFail: ${onFail ? "fn" : "none"})`
 		: "";
 }
 
@@ -98,7 +98,7 @@ export function describeRunnable(r: Runnable, indent: number): string {
 			const who = `model: ${r.model ?? "default"}, tools: ${(r.tools ?? ["read", "bash", "edit", "write"]).join(",")}`;
 			const json = r.jsonOutput ? ", json" : "";
 			const gateInfo = r.gate ? `, gate: ${r.gate.name || "fn"}` : "";
-			const onFailInfo = r.onFail ? `, onFail: ${r.onFail.action}` : "";
+			const onFailInfo = r.onFail ? `, onFail: fn` : "";
 			return `${pad}→ [step] "${r.label}" (${who}${json}${gateInfo}${onFailInfo})`;
 		}
 

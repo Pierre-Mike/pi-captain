@@ -53,6 +53,6 @@ export const tddTaskList: Step = {
 	description:
 		"Apply Kent Beck's Canon TDD task list: each BDD scenario → atomic unit tests → 1 function each",
 	prompt,
-	onFail: retry,
+	onFail: retry(),
 	transform: full,
 };

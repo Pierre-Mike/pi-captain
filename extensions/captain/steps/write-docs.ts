@@ -2,7 +2,7 @@
 // Stage 3b of spec-tdd: Doc-writer produces developer documentation from
 // the spec. Runs in parallel with TDD Green.
 
-import { llmFast } from "../gates/index.js";
+import { llmFast, warn } from "../gates/index.js";
 import { full } from "../transforms/presets.js";
 import type { Step } from "../types.js";
 
@@ -46,7 +46,6 @@ export const writeDocs: Step = {
 			"(3) API reference with function signatures, (4) error handling docs? " +
 			"Rate completeness 0-1. Threshold: 0.6",
 	),
-	onFail: { action: "warn" },
+	onFail: warn,
 	transform: full,
-	maxTurns: 15,
 };

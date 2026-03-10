@@ -59,5 +59,4 @@ export const preparePR: Step = {
 	gate: allOf(bunTest, user),
 	onFail: retry(1),
 	transform: full,
-	maxTurns: 10,
 };

@@ -39,9 +39,17 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 						text: `🧠 Generating pipeline for: "${params.goal}"...`,
 					},
 				],
+				details: undefined,
 			});
 
 			try {
+				if (!ctx.model) {
+					return {
+						content: [{ type: "text", text: "Error: no model available" }],
+						details: undefined,
+					};
+				}
+
 				const apiKey = await ctx.modelRegistry.getApiKey(ctx.model);
 				if (!apiKey) {
 					return {
@@ -51,7 +59,7 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 								text: "Error: no API key available for the current model",
 							},
 						],
-						isError: true,
+						details: undefined,
 					};
 				}
 
@@ -85,15 +93,11 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 								].join("\n"),
 							},
 						],
+						details: undefined,
 					};
 				}
 
 				state.pipelines[generated.name] = { spec: generated.pipeline };
-				const savedPath = state.savePipelineToFile(
-					generated.name,
-					generated.pipeline,
-					ctx.cwd,
-				);
 
 				return {
 					content: [
@@ -106,11 +110,11 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 								"── Structure ──",
 								summary,
 								"",
-								`💾 Saved to ${savedPath}`,
 								`Run it with: captain_run({ name: "${generated.name}", input: "<your input>" })`,
 							].join("\n"),
 						},
 					],
+					details: undefined,
 				};
 			} catch (err) {
 				return {
@@ -120,7 +124,7 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 							text: `Pipeline generation failed: ${err instanceof Error ? err.message : String(err)}`,
 						},
 					],
-					isError: true,
+					details: undefined,
 				};
 			}
 		},
@@ -139,7 +143,7 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 		renderResult: (result, { isPartial }, theme) => {
 			if (isPartial)
 				return new Text(theme.fg("accent", "● Generating pipeline..."), 0, 0);
-			if (result.isError)
+			if (result.content[0] && (result.content[0] as any).text?.startsWith("Error"))
 				return new Text(theme.fg("error", "✗ Generation failed"), 0, 0);
 			return new Text(theme.fg("success", "✓ Pipeline generated"), 0, 0);
 		},

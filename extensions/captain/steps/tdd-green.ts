@@ -49,7 +49,6 @@ export const tddGreen: Step = {
 	prompt,
 	// Gate: all tests must pass
 	gate: bunTest,
-	onFail: retry,
+	onFail: retry(),
 	transform: full,
-	maxTurns: 25,
 };

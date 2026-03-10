@@ -1,6 +1,7 @@
 // ── Recursive Pipeline Execution Engine ────────────────────────────────────
 // Each Step runs via the pi SDK (createAgentSession) — no subprocess needed.
 
+import type { AgentTool } from "@mariozechner/pi-agent-core";
 import type { Api, Model } from "@mariozechner/pi-ai";
 import {
 	createAgentSession,
@@ -15,12 +16,12 @@ import {
 	getAgentDir,
 	SessionManager,
 	SettingsManager,
-	type Tool,
 } from "@mariozechner/pi-coding-agent";
 import { type GateResult, runGate } from "./gates.js";
 import { mergeOutputs } from "./merge.js";
 import type {
 	Gate,
+	GateCtx,
 	OnFail,
 	Parallel,
 	Pool,
@@ -92,8 +93,8 @@ export async function executeRunnable(
 // ── Step Execution ─────────────────────────────────────────────────────────
 
 /** Map tool name strings (e.g. "read", "bash") to SDK Tool instances for a given cwd. */
-function resolveTools(names: string[], cwd: string): Tool[] {
-	return names.flatMap((name) => {
+function resolveTools(names: string[], cwd: string): AgentTool<any>[] {
+	return names.flatMap((name): AgentTool<any>[] => {
 		switch (name) {
 			case "read":
 				return [createReadTool(cwd)];
@@ -180,10 +181,10 @@ async function runStepCore(
 		cwd: ectx.cwd,
 		agentDir: getAgentDir(),
 		...(systemPrompt && { systemPrompt }),
-		...(step.extensions?.length > 0 && {
+		...((step.extensions?.length ?? 0) > 0 && {
 			additionalExtensionPaths: step.extensions,
 		}),
-		...(step.skills?.length > 0 && {
+		...((step.skills?.length ?? 0) > 0 && {
 			additionalSkillPaths: step.skills,
 		}),
 	});

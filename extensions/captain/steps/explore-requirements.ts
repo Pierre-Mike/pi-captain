@@ -53,6 +53,6 @@ export const exploreRequirements: Step = {
 		"Broad discovery with open-ended questions to understand vision, goals, and context",
 	prompt,
 	gate: user,
-	onFail: retry,
+	onFail: retry(),
 	transform: full,
 };

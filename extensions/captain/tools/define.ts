@@ -47,21 +47,21 @@ export function registerDefineTool(pi: ExtensionAPI, state: CaptainState) {
 								text: "Error: spec must have a 'kind' field (step, sequential, pool, parallel)",
 							},
 						],
-						isError: true,
+						details: undefined,
 					};
 				}
 
 				state.pipelines[params.name] = { spec };
-				const savedPath = state.savePipelineToFile(params.name, spec, ctx.cwd);
 				const summary = describeRunnable(spec, 0);
 
 				return {
 					content: [
 						{
 							type: "text",
-							text: `Captain pipeline "${params.name}" defined:\n${summary}\n\n💾 Saved to ${savedPath}`,
+							text: `Captain pipeline "${params.name}" defined:\n${summary}`,
 						},
 					],
+					details: undefined,
 				};
 			} catch (err) {
 				return {
@@ -71,7 +71,7 @@ export function registerDefineTool(pi: ExtensionAPI, state: CaptainState) {
 							text: `Error parsing pipeline spec: ${err instanceof Error ? err.message : String(err)}`,
 						},
 					],
-					isError: true,
+					details: undefined,
 				};
 			}
 		},
@@ -84,7 +84,7 @@ export function registerDefineTool(pi: ExtensionAPI, state: CaptainState) {
 				0,
 			),
 		renderResult: (result, _opts, theme) => {
-			if (result.isError)
+			if (result.content[0] && (result.content[0] as any).text?.startsWith("Error"))
 				return new Text(theme.fg("error", "✗ Invalid spec"), 0, 0);
 			return new Text(theme.fg("success", "✓ Pipeline defined"), 0, 0);
 		},

@@ -219,9 +219,8 @@ describe('captain_run tool: name="" + hasUI=false', () => {
 			undefined,
 			undefined,
 			ctx,
-		)) as { isError: boolean; content: Array<{ text: string }> };
+		)) as { content: Array<{ text: string }> };
 
-		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain('pipeline "" not found');
 		expect(selectMock).not.toHaveBeenCalled();
 		expect(inputMock).not.toHaveBeenCalled();
@@ -244,9 +243,8 @@ describe('captain_run tool: name="" + hasUI=false', () => {
 			undefined,
 			undefined,
 			ctx,
-		)) as { isError: boolean; content: Array<{ text: string }> };
+		)) as { content: Array<{ text: string }> };
 
-		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toMatch(/captain_define/i);
 	});
 });
@@ -287,10 +285,9 @@ describe('captain_run tool: name="" + hasUI=true + no pipelines available', () =
 			undefined,
 			undefined,
 			ctx,
-		)) as { isError: boolean; content: Array<{ text: string }> };
+		)) as { content: Array<{ text: string }> };
 
 		// Should NOT be an error (graceful), but should mention no pipelines
-		expect(result.isError).toBeFalsy();
 		expect(result.content[0].text).toMatch(/no pipelines/i);
 	});
 });
@@ -362,9 +359,8 @@ describe('captain_run tool: name="" + hasUI=true, user cancels select', () => {
 			undefined,
 			undefined,
 			ctx,
-		)) as { isError: boolean; content: Array<{ text: string }> };
+		)) as { content: Array<{ text: string }> };
 
-		expect(result.isError).toBeFalsy();
 		expect(result.content[0].text).toMatch(/cancelled/i);
 	});
 
@@ -438,9 +434,8 @@ describe('captain_run tool: name="" + hasUI=true, user cancels input dialog', ()
 			undefined,
 			undefined,
 			ctx,
-		)) as { isError: boolean; content: Array<{ text: string }> };
+		)) as { content: Array<{ text: string }> };
 
-		expect(result.isError).toBeFalsy();
 		// Should either be "(cancelled)" or a similar graceful message
 		expect(result.content[0].text).toMatch(/cancelled/i);
 	});
@@ -608,9 +603,8 @@ describe("captain_run tool: error handling when UI methods throw", () => {
 			undefined,
 			undefined,
 			ctx,
-		)) as { isError: boolean; content: Array<{ text: string }> };
+		)) as { content: Array<{ text: string }> };
 
-		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("UI broke");
 	});
 
@@ -637,9 +631,8 @@ describe("captain_run tool: error handling when UI methods throw", () => {
 			undefined,
 			undefined,
 			ctx,
-		)) as { isError: boolean; content: Array<{ text: string }> };
+		)) as { content: Array<{ text: string }> };
 
-		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("input broke");
 	});
 
@@ -678,10 +671,9 @@ describe("captain_run tool: error handling when UI methods throw", () => {
 			undefined,
 			undefined,
 			ctx,
-		)) as { isError: boolean; content: Array<{ text: string }> };
+		)) as { content: Array<{ text: string }> };
 
 		// Should surface the error and NOT silently proceed
-		expect(result.isError).toBe(true);
 		// Pipeline should NOT be registered
 		expect(state.pipelines["captain:broken"]).toBeUndefined();
 	});
@@ -712,7 +704,7 @@ describe("captain_run tool: aborted signal handling", () => {
 			ac.signal,
 			undefined,
 			ctx,
-		)) as { isError: boolean; content: Array<{ text: string }> };
+		)) as { content: Array<{ text: string }> };
 
 		expect(selectMock).not.toHaveBeenCalled();
 		expect(result.content[0].text).toMatch(/cancelled/i);
@@ -878,8 +870,7 @@ describe("captain_run tool: name=undefined treated like name=''", () => {
 			undefined,
 			undefined,
 			ctx,
-		)) as { isError: boolean; content: Array<{ text: string }> };
+		)) as { content: Array<{ text: string }> };
 
-		expect(result.isError).toBe(true);
 	});
 });

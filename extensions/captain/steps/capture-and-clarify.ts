@@ -47,6 +47,6 @@ export const captureAndClarify: Step = {
 	temperature: 0.3,
 	description: "Transform raw requirement into a structured spec",
 	prompt,
-	onFail: retry,
+	onFail: retry(),
 	transform: full,
 };

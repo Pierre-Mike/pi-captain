@@ -88,6 +88,6 @@ export const contractTasks: Step = {
 	description:
 		"Convert BDD scenarios into typed AI execution contracts (prompt-as-contract pattern, UNIT-N format)",
 	prompt,
-	onFail: retry,
+	onFail: retry(),
 	transform: full,
 };

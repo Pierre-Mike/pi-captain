@@ -16,6 +16,7 @@ function listPresets(state: CaptainState, _cwd: string) {
 					text: "No presets found. Add .ts modules to pipelines/ or .json files to .pi/pipelines/",
 				},
 			],
+			details: undefined,
 		};
 	}
 	return {
@@ -25,6 +26,7 @@ function listPresets(state: CaptainState, _cwd: string) {
 				text: `Available pipeline presets:\n${presets.map((p) => `  • ${p.name} (${p.source})`).join("\n")}`,
 			},
 		],
+		details: undefined,
 	};
 }
 
@@ -36,7 +38,7 @@ function missingNameError() {
 				text: "Error: 'name' is required for load action. Use action 'list' to see available presets.",
 			},
 		],
-		isError: true,
+		details: undefined,
 	};
 }
 
@@ -51,7 +53,7 @@ async function loadPreset(state: CaptainState, name: string, cwd: string) {
 						text: `Error: preset or file "${name}" not found.\nUse action 'list' to see available presets, or provide a valid file path.`,
 					},
 				],
-				isError: true,
+				details: undefined,
 			};
 		}
 		const summary = describeRunnable(resolved.spec, 0);
@@ -62,6 +64,7 @@ async function loadPreset(state: CaptainState, name: string, cwd: string) {
 					text: `Loaded pipeline "${resolved.name}"${resolved.source ? ` from ${resolved.source}` : ""}\n\n${summary}`,
 				},
 			],
+			details: undefined,
 		};
 	} catch (err) {
 		return {
@@ -71,7 +74,7 @@ async function loadPreset(state: CaptainState, name: string, cwd: string) {
 					text: `Error loading pipeline: ${err instanceof Error ? err.message : String(err)}`,
 				},
 			],
-			isError: true,
+			details: undefined,
 		};
 	}
 }
@@ -116,7 +119,7 @@ export function registerLoadTool(pi: ExtensionAPI, state: CaptainState) {
 				0,
 			),
 		renderResult: (result, _opts, theme) => {
-			if (result.isError)
+			if (result.content[0] && (result.content[0] as any).text?.startsWith("Error"))
 				return new Text(theme.fg("error", "✗ Load failed"), 0, 0);
 			return new Text(theme.fg("success", "✓ Pipeline loaded"), 0, 0);
 		},

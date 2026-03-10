@@ -154,7 +154,7 @@ describe("containerGateInfo", () => {
 	});
 
 	test("gate without onFail shows onFail: none", () => {
-		function myCommandGate() {
+		function myCommandGate(): true {
 			return true;
 		}
 		const result = containerGateInfo(myCommandGate, undefined);
@@ -163,12 +163,15 @@ describe("containerGateInfo", () => {
 	});
 
 	test("gate with onFail shows both", () => {
-		function myLlmGate() {
+		function myLlmGate(): true {
 			return true;
 		}
-		const result = containerGateInfo(myLlmGate, { action: "retry", max: 3 });
+		function myOnFail() {
+			return { action: "retry" as const };
+		}
+		const result = containerGateInfo(myLlmGate, myOnFail);
 		expect(result).toContain("gate: myLlmGate");
-		expect(result).toContain("onFail: retry");
+		expect(result).toContain("onFail: fn");
 	});
 });
 

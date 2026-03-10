@@ -41,6 +41,6 @@ export const fetchPrFiles: Step = {
 	description:
 		"Fetch all changed files and diffs via GitHub CLI — emit structured file list for parallel review",
 	prompt,
-	onFail: retry,
+	onFail: retry(),
 	transform: full,
 };

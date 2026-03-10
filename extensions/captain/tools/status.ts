@@ -14,7 +14,7 @@ export function registerStatusTool(pi: ExtensionAPI, state: CaptainState) {
 			name: Type.String({ description: "Pipeline name" }),
 		}),
 
-		async execute(_id, params) {
+		async execute(_id, params, _signal, _onUpdate, _ctx) {
 			if (!state.runningState || state.runningState.name !== params.name) {
 				const pipeline = state.pipelines[params.name];
 				if (!pipeline) {
@@ -22,7 +22,7 @@ export function registerStatusTool(pi: ExtensionAPI, state: CaptainState) {
 						content: [
 							{ type: "text", text: `Pipeline "${params.name}" not found.` },
 						],
-						isError: true,
+						details: undefined,
 					};
 				}
 				return {
@@ -32,6 +32,7 @@ export function registerStatusTool(pi: ExtensionAPI, state: CaptainState) {
 							text: `Pipeline "${params.name}" defined but has not been run yet.`,
 						},
 					],
+					details: undefined,
 				};
 			}
 
@@ -54,6 +55,7 @@ export function registerStatusTool(pi: ExtensionAPI, state: CaptainState) {
 
 			return {
 				content: [{ type: "text", text: lines.join("\n") }],
+				details: undefined,
 			};
 		},
 

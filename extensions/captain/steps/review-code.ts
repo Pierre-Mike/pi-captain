@@ -81,5 +81,4 @@ export const reviewCode: Step = {
 	),
 	onFail: retry(2),
 	transform: full,
-	maxTurns: 15,
 };

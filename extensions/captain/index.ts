@@ -60,7 +60,7 @@ export default function (pi: ExtensionAPI) {
 			render(width: number): string[] {
 				const model = ctx.model?.id ?? "no-model";
 				const usage = ctx.getContextUsage?.();
-				const pct = usage ? usage.percent : 0;
+				const pct = usage?.percent ?? 0;
 				const filled = Math.round(pct / 10);
 				const bar = "#".repeat(filled) + "-".repeat(10 - filled);
 

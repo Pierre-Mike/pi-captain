@@ -22,6 +22,7 @@ export function registerListTool(pi: ExtensionAPI, state: CaptainState) {
 							text: "No pipelines defined or available. Use captain_define to create one.",
 						},
 					],
+					details: undefined,
 				};
 			}
 
@@ -29,6 +30,7 @@ export function registerListTool(pi: ExtensionAPI, state: CaptainState) {
 			const header = loaded > 0 ? `${loaded} pipeline(s) loaded:\n\n` : "";
 			return {
 				content: [{ type: "text", text: `${header}${lines.join("\n")}` }],
+				details: undefined,
 			};
 		},
 

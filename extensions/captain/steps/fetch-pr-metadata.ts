@@ -34,7 +34,7 @@ Requirements:
 Downstream: UNIT-7b (gh-call), UNIT-9 (auth-failure validation), UNIT-10a (retry-loop)
 all depend on this token.
 `,
-	onFail: retry,
+	onFail: retry(),
 	transform: full,
 };
 
@@ -70,7 +70,7 @@ Requirements:
   - HttpError is thrown with correct status code on a 404 mock response
 - End with the exact shell command to run the tests
 `,
-	onFail: retry,
+	onFail: retry(),
 	transform: full,
 };
 
@@ -107,7 +107,7 @@ End with:
 CASES PASSED: X / 3
 AUTH FAILURE PATH VALIDATED: YES / NO
 `,
-	onFail: retry,
+	onFail: retry(),
 	transform: full,
 };
 
@@ -163,6 +163,6 @@ Requirements:
 
 Downstream: UNIT-8 (not-found check) and UNIT-12 (empty-body check) both test this function.
 `,
-	onFail: retry,
+	onFail: retry(),
 	transform: full,
 };

@@ -6,7 +6,15 @@
 import type { Api, Model } from "@mariozechner/pi-ai";
 import { complete } from "@mariozechner/pi-ai";
 import { deserializeRunnable } from "./deserialize.js";
-import type { Agent, Runnable } from "./types.js";
+import type { Runnable } from "./types.js";
+
+interface Agent {
+	name: string;
+	description: string;
+	tools: string[];
+	model?: string;
+	source?: string;
+}
 
 // ── Gate & OnFail Catalogs ────────────────────────────────────────────────
 // Human-readable descriptions so the LLM knows what's available
@@ -246,6 +254,7 @@ interface RawRunnable {
 	label?: string;
 	agent?: string;
 	prompt?: string;
+	tools?: string[];
 	gate?: Record<string, unknown>;
 	onFail?: Record<string, unknown>;
 	transform?: Record<string, unknown>;
