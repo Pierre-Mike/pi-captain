@@ -37,6 +37,12 @@ Captain turns pi into a pipeline orchestration platform. Define typed pipeline s
 Pipelines are **TypeScript files** that export a `pipeline` const of type `Runnable`.
 Gates and onFail handlers are **plain functions** — no JSON encoding needed.
 
+> **Convention for user pipelines in `.pi/pipelines/`:** Start the file with these two header comments so the name and description are discoverable without importing the module (required for `captain_generate` output, recommended for all hand-written pipelines):
+> ```ts
+> // @name: my-pipeline-name
+> // @description: One-line description of what this pipeline does
+> ```
+
 ```ts
 // my-pipeline.ts
 import { retry, skip, warn } from "<captain>/gates/on-fail.js";
@@ -105,6 +111,7 @@ captain_run: name="my-pipeline", input="Build a REST API for user management"
 | `skills` | string[] | — | Additional skill file paths to inject |
 | `extensions` | string[] | — | Additional extension file paths to load |
 | `jsonOutput` | boolean | `false` | Instructs step to produce structured JSON |
+| `description` | string | — | Step documentation |
 | `gate` | Gate | `undefined` | Validation after step runs (function) |
 | `onFail` | OnFail | required | What to do when gate fails (function) |
 | `transform` | Transform | required | How to pass output to the next step |
@@ -252,9 +259,9 @@ merge: (outputs) => outputs.join("\n---\n")
 
 ## Slash Commands
 
-- `/captain` — List all pipelines
-- `/captain <name>` — Show pipeline structure
-- `/captain-load` — List available presets
-- `/captain-load <name>` — Load a preset (tab-completable)
-- `/captain-run <name> <input>` — Quick-run a pipeline
-- `/captain-step <prompt> --model <id> --tools <t1,t2>` — Run a single ad-hoc step
+- `/captain` — Interactive pipeline launcher OR show pipeline details
+- `/captain-load [name]` — List available presets (no args) or load a specific preset
+- `/captain-run <name> <input>` — Quick-run a pipeline (supports `--step <label>` for single step)
+- `/captain-generate <goal>` — Generate a new pipeline using LLM
+- `/captain-step <prompt> [flags]` — Run ad-hoc step with `--model`, `--tools`, `--label` flags
+- `/captain-help` — Show all commands and usage

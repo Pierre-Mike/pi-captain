@@ -13,16 +13,20 @@
 //   8. RETRY DEMO  — gate: always fails → exhausts retry(2) → step fails
 //   9. WARN DEMO   — gate: assert fails → warn (continues anyway)
 //  10. FALLBACK    — gate: assert fails → fallback step
-//  11. FINAL       — sequential wrapping everything with a none gate
+//  11. TOOL DEMO   — step with tools: ["bash"] → runs echo + node --version
+//  12. LLM FAST    — gate: llmFast() judges output quality via a fast LLM
+//  13. FINAL       — sequential wrapping everything with a none gate
 //
 // Run: captain_run { name: "captain:showcase", input: "list 5 hobbies" }
 // Load: captain_load { action: "load", name: "captain:showcase" }
 
+import { llmFast } from "../gates/llm.js";
 import { fallback as onFailFallback, retry, warn } from "../gates/on-fail.js";
 import { regexCI } from "../gates/presets.js";
 import { concat, rank } from "../merge.js";
 import { extract, full, summarize } from "../transforms/presets.js";
 import type {
+	Gate,
 	OnFail,
 	Parallel,
 	Pool,
@@ -37,7 +41,7 @@ import type {
 
 const flash = "flash";
 const noTools: string[] = [];
-const noGate = undefined;
+const noGate: Gate = () => true;
 const noFail: OnFail = warn;
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -47,14 +51,14 @@ const noFail: OnFail = warn;
 const brainstorm: Step = {
 	kind: "step",
 	label: "brainstorm",
-	model: flash,
+	model: "sonnet",
 	tools: noTools,
 	prompt: `You are a creative brainstormer.
 Given this topic: "$INPUT"
 Output a numbered list of exactly 5 short ideas (one per line).
 Format: "1. <idea>"`,
-	gate: noGate,
-	onFail: noFail,
+	gate: ({ output }) => output.length > 10 || "not long enough",
+	onFail: retry(2),
 	transform: full,
 };
 
@@ -232,7 +236,74 @@ const fallbackDemo: Step = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// Step 9 — Retry demo: gate checks real output — must be exactly "hello"
+// Step 9 — Tool demo: uses the bash tool to check node version and echo the winner
+// ─────────────────────────────────────────────────────────────────────────
+
+const toolDemo: Step = {
+	kind: "step",
+	label: "tool-demo",
+	model: flash,
+	tools: ["bash"],
+	prompt: `You have access to the bash tool.
+Do the following steps in order:
+1. Run: echo "Winner: $INPUT"
+2. Run: node --version
+Then output a single line: "Tool demo complete. Winner: $INPUT. Node: <version>"`,
+	gate: ({ output, ctx }) => {
+		if (!output.toLowerCase().includes("tool demo complete"))
+			return "Output must contain 'Tool demo complete'";
+		if (!ctx?.toolsUsed?.includes("bash"))
+			return `'bash' tool was never called — tools used: [${ctx?.toolsUsed?.join(", ") ?? "none"}]`;
+		return true;
+	},
+	onFail: warn,
+	transform: full,
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// Step 10 — Web search demo: uses the web_search tool to find current info
+// ─────────────────────────────────────────────────────────────────────────
+
+const webSearchDemo: Step = {
+	kind: "step",
+	label: "web-search-demo",
+	model: flash,
+	tools: ["web_search"],
+	prompt: `You have access to the web_search tool.
+Search the web for: "best hobbies to start in 2025"
+Then output a single line starting with "Web search complete:" followed by the top 3 hobbies you found.`,
+	gate: ({ output, ctx }) => {
+		if (!output.toLowerCase().includes("web search complete"))
+			return "Output must contain 'Web search complete'";
+		if (!ctx?.toolsUsed?.includes("web_search"))
+			return `'web_search' tool was never called — tools used: [${ctx?.toolsUsed?.join(", ") ?? "none"}]`;
+		return true;
+	},
+	onFail: warn,
+	transform: full,
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// Step 11 — llmFast gate demo: output is evaluated by a fast LLM judge
+// ─────────────────────────────────────────────────────────────────────────
+
+const llmFastDemo: Step = {
+	kind: "step",
+	label: "llm-fast-gate-demo",
+	model: flash,
+	tools: noTools,
+	prompt: `Write a single enthusiastic sentence congratulating the user on their great hobby idea: "$INPUT".
+Keep it positive, specific, and under 20 words.`,
+	gate: llmFast(
+		"The output is a single enthusiastic congratulatory sentence, under 20 words, and mentions a hobby or idea.",
+		0.7,
+	),
+	onFail: warn,
+	transform: full,
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// Step 12 — Retry demo: gate checks real output — must be exactly "hello"
 //           (lowercase, no punctuation, no extra words). The model is
 //           tempted to elaborate; the gate catches any deviation and retries.
 // ─────────────────────────────────────────────────────────────────────────
@@ -264,7 +335,10 @@ export const pipeline: Runnable = {
 		formatStep, //  6️⃣  JSON gate + extract transform
 		warnDemo, //  7️⃣  warn onFail demo
 		fallbackDemo, //  8️⃣  fallback onFail demo
-		retryDemo, //  9️⃣  closure-counter retry demo
+		toolDemo, //  9️⃣  tool usage demo (bash)
+		webSearchDemo, // 🔟  web search tool demo
+		llmFastDemo, // 1️⃣1️⃣  llmFast gate demo
+		retryDemo, // 1️⃣2️⃣  closure-counter retry demo
 	],
 	gate: noGate,
 } satisfies Sequential;

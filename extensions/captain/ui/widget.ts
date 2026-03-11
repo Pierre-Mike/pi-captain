@@ -41,29 +41,68 @@ function truncateDetail(detail: string, available: number): string {
 		: detail;
 }
 
-/** Render one step as a compact single line */
-function renderStepLine(
+/**
+ * Shorten a full model ID to a readable label.
+ * e.g. "claude-sonnet-4-5" → "sonnet 4.5"
+ *      "claude-haiku-4-5-20250929" → "haiku 4.5"
+ *      "gpt-4o" → "gpt-4o"
+ */
+function shortenModelId(id: string): string {
+	const m = id.match(/^claude-([a-z]+)-(\d+)-(\d+)(?:-\d{8})?$/i);
+	if (m) return `${m[1]} ${m[2]}.${m[3]}`;
+	return id.replace(/^claude-/i, "");
+}
+
+/**
+ * Render one step as a single line:
+ *   ● name  model  🔨 2/4  1.2s  detail…
+ */
+function renderStepLines(
 	r: StepResult,
 	width: number,
 	indent: number,
 	// biome-ignore lint/suspicious/noExplicitAny: pi theme API is not typed
 	theme: any,
-): string {
+): string[] {
 	const pad = " ".repeat(indent);
+
 	const dot = theme.fg(statusColor(r.status), statusDot(r.status));
 	const name = theme.fg(r.status === "running" ? "accent" : "dim", r.label);
-	const timeStr = r.elapsed > 0 ? ` ${(r.elapsed / 1000).toFixed(1)}s` : "";
-	const time = timeStr ? theme.fg("dim", timeStr) : "";
-	const toolStr = r.toolCount !== undefined ? ` [${r.toolCount} tools]` : "";
-	const toolBadge = toolStr ? theme.fg("muted", toolStr) : "";
+
+	// model badge
+	const modelRaw = r.model ? shortenModelId(r.model) : "";
+	const model = modelRaw ? `  ${theme.fg("dim", modelRaw)}` : "";
+
+	// 🔨 callsMade/toolsAvailable  (or just 🔨 N if only available is known)
+	let hammerRaw = "";
+	if (r.toolCount !== undefined) {
+		const calls = r.toolCallCount ?? 0;
+		hammerRaw = `🔨 ${calls}/${r.toolCount}`;
+	}
+	const hammer = hammerRaw ? `  ${theme.fg("dim", hammerRaw)}` : "";
+
+	// elapsed time
+	const timeRaw = r.elapsed > 0 ? `${(r.elapsed / 1000).toFixed(1)}s` : "";
+	const time = timeRaw ? `  ${theme.fg("dim", timeRaw)}` : "";
+
+	// fixed-width portion (no ANSI) for available-width calculation
 	const fixedLen =
-		indent + 2 + r.label.length + timeStr.length + toolStr.length;
+		indent +
+		2 +
+		r.label.length +
+		(modelRaw ? 2 + modelRaw.length : 0) +
+		(hammerRaw ? 2 + hammerRaw.length : 0) +
+		(timeRaw ? 2 + timeRaw.length : 0);
+
 	const detailTrunc = truncateDetail(stepDetail(r), width - fixedLen - 2);
-	const detail = detailTrunc ? theme.fg("muted", `  ${detailTrunc}`) : "";
-	return truncateToWidth(
-		`${pad}${dot} ${name}${time}${detail}${toolBadge}`,
-		width,
-	);
+	const detail = detailTrunc ? `  ${theme.fg("muted", detailTrunc)}` : "";
+
+	return [
+		truncateToWidth(
+			`${pad}${dot} ${name}${model}${hammer}${time}${detail}`,
+			width,
+		),
+	];
 }
 
 // ── Pending step enumeration from spec ────────────────────────────────────
@@ -75,6 +114,7 @@ interface PendingEntry {
 	matchLabel: string;
 	group?: string;
 	toolCount: number;
+	model?: string;
 }
 
 function getSpecLabel(r: Runnable): string {
@@ -103,6 +143,7 @@ function flattenSpec(runnable: Runnable, group?: string): PendingEntry[] {
 					group,
 					toolCount: (runnable.tools ?? ["read", "bash", "edit", "write"])
 						.length,
+					model: runnable.model,
 				},
 			];
 		case "sequential":
@@ -129,13 +170,23 @@ function flattenSpec(runnable: Runnable, group?: string): PendingEntry[] {
 }
 
 /**
- * Build a map from step label → group for quick lookup when rendering running steps.
- * For pool steps (all sharing the same label), the group is the same for all instances.
+ * Build a map from step label → spec metadata (group, toolCount, model) for quick
+ * lookup when rendering running steps that don't have a StepResult yet.
  */
-function buildLabelGroupMap(spec: Runnable): Map<string, string | undefined> {
+function buildLabelSpecMap(
+	spec: Runnable,
+): Map<string, { group?: string; toolCount: number; model?: string }> {
 	const entries = flattenSpec(spec);
-	const map = new Map<string, string | undefined>();
-	for (const e of entries) map.set(e.matchLabel, e.group);
+	const map = new Map<
+		string,
+		{ group?: string; toolCount: number; model?: string }
+	>();
+	for (const e of entries)
+		map.set(e.matchLabel, {
+			group: e.group,
+			toolCount: e.toolCount,
+			model: e.model,
+		});
 	return map;
 }
 
@@ -170,7 +221,7 @@ function computePendingSteps(
 	return pending;
 }
 
-/** Append one step's line to output, emit a group header if needed. Returns current group. */
+/** Append one step's lines to output, emit a group header if needed. Returns current group. */
 function appendStepLine(
 	lines: string[],
 	r: StepResult,
@@ -187,16 +238,16 @@ function appendStepLine(
 		currentGroup = undefined;
 	}
 	if (r.group) {
-		lines.push(
-			`${theme.fg("dim", "  │")}${renderStepLine(r, width - 3, 1, theme)}`,
-		);
+		for (const row of renderStepLines(r, width - 3, 1, theme)) {
+			lines.push(`${theme.fg("dim", "  │")}${row}`);
+		}
 	} else {
-		lines.push(renderStepLine(r, width, 2, theme));
+		lines.push(...renderStepLines(r, width, 2, theme));
 	}
 	return currentGroup;
 }
 
-/** Append a pending step line (from spec, not yet started). */
+/** Append a pending step's lines (from spec, not yet started). */
 function appendPendingLine(
 	lines: string[],
 	entry: PendingEntry,
@@ -219,13 +270,14 @@ function appendPendingLine(
 		elapsed: 0,
 		group: entry.group,
 		toolCount: entry.toolCount,
+		model: entry.model,
 	};
 	if (entry.group) {
-		lines.push(
-			`${theme.fg("dim", "  │")}${renderStepLine(pendingResult, width - 3, 1, theme)}`,
-		);
+		for (const row of renderStepLines(pendingResult, width - 3, 1, theme)) {
+			lines.push(`${theme.fg("dim", "  │")}${row}`);
+		}
 	} else {
-		lines.push(renderStepLine(pendingResult, width, 2, theme));
+		lines.push(...renderStepLines(pendingResult, width, 2, theme));
 	}
 	return currentGroup;
 }
@@ -235,13 +287,14 @@ export function renderStepList(
 	results: StepResult[],
 	currentSteps: Set<string>,
 	currentStepStreams: Map<string, string>,
+	currentStepToolCalls: Map<string, number>,
 	spec: Runnable,
 	width: number,
 	// biome-ignore lint/suspicious/noExplicitAny: pi theme API is not typed
 	theme: any,
 ): string[] {
-	// Build a label→group map from the spec so running steps can be indented correctly
-	const labelGroupMap = buildLabelGroupMap(spec);
+	// Build a label→spec map so running steps can show model/toolCount before they complete
+	const labelSpecMap = buildLabelSpecMap(spec);
 
 	const runningSteps: StepResult[] = [...currentSteps].map((label) => {
 		const stream = currentStepStreams.get(label) ?? "";
@@ -250,16 +303,18 @@ export function renderStepList(
 				.split("\n")
 				.filter((l) => l.trim())
 				.at(-1) ?? "";
-		// Look up group and toolCount from either an existing result or the spec map
+		// Prefer live result data; fall back to spec metadata for steps not yet in results
 		const existingResult = results.findLast((r) => r.label === label);
+		const specMeta = labelSpecMap.get(label);
 		return {
 			label,
 			status: "running" as const,
 			output: streamTail,
 			elapsed: 0,
-			toolCount: existingResult?.toolCount,
-			// Inherit group from spec lookup so running steps get proper indentation
-			group: existingResult?.group ?? labelGroupMap.get(label),
+			toolCount: existingResult?.toolCount ?? specMeta?.toolCount,
+			toolCallCount: currentStepToolCalls.get(label) ?? 0,
+			model: existingResult?.model ?? specMeta?.model,
+			group: existingResult?.group ?? specMeta?.group,
 		};
 	});
 
@@ -306,6 +361,7 @@ export function updateWidget(ctx: ExtensionContext, state: PipelineState) {
 						state.results,
 						state.currentSteps,
 						state.currentStepStreams,
+						state.currentStepToolCalls,
 						state.spec,
 						width,
 						theme,

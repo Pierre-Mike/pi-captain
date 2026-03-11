@@ -183,8 +183,6 @@ async function buildEctx(
 			pipelineState.currentSteps.add(label);
 			pipelineState.currentStepStreams.delete(label);
 			updateWidget(ctx, pipelineState);
-			const running = [...pipelineState.currentSteps].join(", ");
-			ctx.ui.setStatus("captain", `🚀 ${stateName} → ${running}`);
 		},
 		onStepStream: (label, text) => {
 			pipelineState.currentStepStreams.set(label, text);
@@ -223,7 +221,7 @@ async function runRunnableFromCommand(
 		pipelineState.finalOutput = output;
 		pipelineState.endTime = Date.now();
 		pipelineState.results = results;
-
+		clearWidget(ctx);
 		const elapsed = (
 			(pipelineState.endTime -
 				(pipelineState.startTime ?? pipelineState.endTime)) /
@@ -231,9 +229,6 @@ async function runRunnableFromCommand(
 		).toFixed(1);
 		const passed = results.filter((r) => r.status === "passed").length;
 		const failed = results.filter((r) => r.status === "failed").length;
-
-		ctx.ui.setStatus("captain", undefined);
-		clearWidget(ctx);
 		ctx.ui.notify(
 			`✓ "${pipelineState.name}" completed in ${elapsed}s — ${passed} passed, ${failed} failed\n\n${output.slice(0, 800)}${output.length > 800 ? "\n…(truncated)" : ""}`,
 			failed > 0 ? "error" : "info",
@@ -241,7 +236,6 @@ async function runRunnableFromCommand(
 	} catch (err) {
 		pipelineState.status = "failed";
 		pipelineState.endTime = Date.now();
-		ctx.ui.setStatus("captain", undefined);
 		clearWidget(ctx);
 		ctx.ui.notify(
 			`✗ "${pipelineState.name}" failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -250,13 +244,102 @@ async function runRunnableFromCommand(
 	}
 }
 
+async function runInteractivePipelineLauncher(
+	pi: ExtensionAPI,
+	state: CaptainState,
+	ctx: ExtensionCommandContext,
+): Promise<void> {
+	const presets = state.discoverPresets(ctx.cwd);
+	const allNames = [
+		...new Set([
+			...Object.keys(state.pipelines),
+			...presets.map((p) => p.name),
+		]),
+	];
+
+	if (allNames.length === 0) {
+		ctx.ui.notify(
+			"No pipelines defined or available. Use /captain-load to load a preset.",
+			"info",
+		);
+		return;
+	}
+
+	const selected = await ctx.ui.select("Select a pipeline:", allNames);
+	if (!selected) return;
+
+	const input = await ctx.ui.input(`Input for "${selected}":`, "");
+	if (input === undefined) return;
+	if (!input.trim()) {
+		ctx.ui.notify("No input provided.", "error");
+		return;
+	}
+
+	if (
+		!(await ensurePipelineLoaded(selected, ctx.cwd, state, (msg, level) =>
+			ctx.ui.notify(msg, level),
+		))
+	)
+		return;
+
+	const spec = state.pipelines[selected].spec;
+	const pipelineState: PipelineState = {
+		name: selected,
+		spec,
+		status: "running",
+		results: [],
+		currentSteps: new Set(),
+		currentStepStreams: new Map(),
+		currentStepToolCalls: new Map(),
+		startTime: Date.now(),
+	};
+	state.runningState = pipelineState;
+	updateWidget(ctx, pipelineState);
+	await runRunnableFromCommand(
+		pi,
+		spec,
+		input.trim(),
+		pipelineState,
+		state,
+		ctx,
+	);
+}
+
+async function showPipelineDetails(
+	name: string,
+	state: CaptainState,
+	ctx: ExtensionCommandContext,
+): Promise<void> {
+	const p = state.pipelines[name];
+	if (p) {
+		ctx.ui.notify(
+			`Pipeline "${name}":\n${describeRunnable(p.spec, 0)}`,
+			"info",
+		);
+		return;
+	}
+	try {
+		const resolved = await state.resolvePreset(name, ctx.cwd);
+		if (resolved) {
+			ctx.ui.notify(
+				`Pipeline "${name}" (${resolved.source ?? "preset"} — not yet loaded):\n${describeRunnable(resolved.spec, 0)}`,
+				"info",
+			);
+			return;
+		}
+	} catch {
+		/* fall through */
+	}
+	ctx.ui.notify(`Pipeline "${name}" not found.`, "error");
+}
+
 export function registerCommands(pi: ExtensionAPI, state: CaptainState) {
-	// /captain — list or show pipeline details
+	// /captain — interactive: select pipeline then enter input, or show details
 	pi.registerCommand("captain", {
 		description:
-			"Show pipeline details (/captain <name>) or list all (/captain)",
+			"Interactive pipeline launcher (/captain) or show details (/captain <name>)",
 		getArgumentCompletions: (prefix) => {
-			const presets = state.discoverPresets();
+			const presets = state.discoverPresets(process.cwd());
 			const allNames = new Set([
 				...Object.keys(state.pipelines),
 				...presets.map((p) => p.name),
@@ -273,36 +356,10 @@ export function registerCommands(pi: ExtensionAPI, state: CaptainState) {
 		handler: async (args, ctx) => {
 			const name = args?.trim();
 			if (!name) {
-				const lines = state.buildPipelineListLines();
-				ctx.ui.notify(
-					lines.length > 0
-						? lines.join("\n")
-						: "No pipelines defined or available.",
-					"info",
-				);
-				return;
+				await runInteractivePipelineLauncher(pi, state, ctx);
+			} else {
+				await showPipelineDetails(name, state, ctx);
 			}
-			const p = state.pipelines[name];
-			if (p) {
-				ctx.ui.notify(
-					`Pipeline "${name}":\n${describeRunnable(p.spec, 0)}`,
-					"info",
-				);
-				return;
-			}
-			try {
-				const resolved = await state.resolvePreset(name, ctx.cwd);
-				if (resolved) {
-					ctx.ui.notify(
-						`Pipeline "${name}" (${resolved.source ?? "preset"} — not yet loaded):\n${describeRunnable(resolved.spec, 0)}`,
-						"info",
-					);
-					return;
-				}
-			} catch {
-				/* fall through */
-			}
-			ctx.ui.notify(`Pipeline "${name}" not found.`, "error");
 		},
 	});
 
@@ -334,6 +391,7 @@ export function registerCommands(pi: ExtensionAPI, state: CaptainState) {
 				results: [],
 				currentSteps: new Set(),
 				currentStepStreams: new Map(),
+				currentStepToolCalls: new Map(),
 				startTime: Date.now(),
 			};
 			state.runningState = pipelineState;
@@ -354,7 +412,7 @@ export function registerCommands(pi: ExtensionAPI, state: CaptainState) {
 		description:
 			"Load a pipeline preset (/captain-load <name>). No args to list available presets.",
 		getArgumentCompletions: (prefix) => {
-			const presets = state.discoverPresets();
+			const presets = state.discoverPresets(process.cwd());
 			return presets
 				.filter((p) => p.name.startsWith(prefix))
 				.map((p) => ({ value: p.name, label: `${p.name} (${p.source})` }));
@@ -362,7 +420,7 @@ export function registerCommands(pi: ExtensionAPI, state: CaptainState) {
 		handler: async (args, ctx) => {
 			const name = args?.trim();
 			if (!name) {
-				const presets = state.discoverPresets();
+				const presets = state.discoverPresets(ctx.cwd);
 				if (presets.length === 0) {
 					ctx.ui.notify(
 						"No pipeline presets found. Place .json files in .pi/pipelines/",
@@ -464,6 +522,7 @@ export function registerCommands(pi: ExtensionAPI, state: CaptainState) {
 				results: [],
 				currentSteps: new Set(),
 				currentStepStreams: new Map(),
+				currentStepToolCalls: new Map(),
 				startTime: Date.now(),
 			};
 			state.runningState = pipelineState;

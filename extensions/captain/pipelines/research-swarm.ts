@@ -1,0 +1,271 @@
+// ── Pipeline: Research Swarm ─────────────────────────────────────────────
+//
+// Orchestrates 5 parallel researchers, each exploring a different angle of
+// the same question. After research, 5 voter agents score all findings
+// democratically. The lead synthesizes the top-ranked findings into a final
+// deliverable.
+//
+// Phases:
+//   1. PLAN       — Lead decomposes the question into 5 distinct angles.
+//                   Outputs a structured plan with 5 labeled sections [R1]..[R5].
+//   2. RESEARCH   — 5 parallel researchers each receive the full plan via $INPUT,
+//                   extract their assigned angle, and return their findings as text.
+//   3. CONSOLIDATE — All 5 researcher outputs are concat-merged into $INPUT.
+//                   Lead deduplicates and numbers every unique finding [F1]..[FN].
+//   4. VOTE       — 5 voters each receive the consolidated findings via $INPUT
+//                   and independently score every finding 1-10.
+//   5. SYNTHESIZE — All 5 scorecards are concat-merged into $INPUT.
+//                   Lead tallies scores, ranks findings, writes final answer.
+//
+// NOTE: All inter-step data flows through $INPUT/$OUTPUT — no shared files needed.
+// This is the correct captain idiom: file writes are for final artifacts only.
+
+import { warn } from "../gates/on-fail.js";
+import { concat } from "../merge.js";
+import { full } from "../transforms/presets.js";
+import type { Parallel, Runnable, Sequential, Step } from "../types.js";
+
+// ── Phase 1: Plan ─────────────────────────────────────────────────────────
+
+const plan: Step = {
+	kind: "step",
+	label: "Plan",
+	model: "sonnet",
+	tools: ["bash", "read"],
+	prompt: `You are the lead researcher orchestrating a 5-agent research swarm.
+
+Your task: decompose this research question into 5 distinct search angles.
+Question: "$ORIGINAL"
+
+Explore the codebase at the current working directory with bash/read to understand
+what framework is being evaluated (look at README, package.json, key source files).
+
+Then output ONLY the plan below (no preamble, no explanation):
+
+# Research Swarm Plan
+## Question
+$ORIGINAL
+
+## Search Angles
+
+### [R1] Official API & Design Philosophy
+- **Focus**: What the framework explicitly claims to be; its stated design goals
+- **Search terms**: readme design philosophy, types.ts Step Runnable, executor.ts architecture
+- **Source type**: codebase
+
+### [R2] Developer Experience & Ergonomics
+- **Focus**: How easy/hard is it to define and run pipelines? Boilerplate? Type safety?
+- **Search terms**: pipeline definition syntax, typescript ergonomics, onboarding friction
+- **Source type**: codebase + web
+
+### [R3] Competing Frameworks — Feature Matrix
+- **Focus**: What do LangGraph, CrewAI, AutoGen, Prefect, Temporal offer that this lacks?
+- **Search terms**: LangGraph vs CrewAI comparison 2024 2025, AutoGen multi-agent orchestration
+- **Source type**: web
+
+### [R4] Production Readiness & Missing Features
+- **Focus**: Error handling, observability, persistence, scalability gaps
+- **Search terms**: LLM orchestration production observability tracing, state persistence agents
+- **Source type**: web + codebase
+
+### [R5] Contrarian / Niche Perspectives
+- **Focus**: Is this category even needed? Simpler alternatives? Anti-patterns?
+- **Search terms**: LLM orchestration frameworks too complex, simple LLM pipelines bash alternative
+- **Source type**: web`,
+	gate: () => true,
+	onFail: warn,
+	transform: full,
+};
+
+// ── Phase 2: Research ──────────────────────────────────────────────────────
+
+function researcherStep(id: "R1" | "R2" | "R3" | "R4" | "R5"): Step {
+	return {
+		kind: "step",
+		label: `Researcher ${id}`,
+		model: "sonnet",
+		tools: ["read", "bash", "web_search"],
+		prompt: `You are researcher ${id} in a 5-agent research swarm.
+
+## Context
+Original question: "$ORIGINAL"
+
+The plan below was produced by the lead researcher. Find the section labeled [${id}]
+and execute that search strategy. Ignore all other [Rx] sections.
+
+## Plan
+$INPUT
+
+## Your job
+1. Read the [${id}] section of the plan above.
+2. Execute the prescribed search strategy:
+   - If "codebase": use bash (grep, find, cat) on the project in the working directory
+   - If "web": use web_search with 2-3 targeted queries
+   - If "both": do both
+3. Return your findings as structured markdown:
+
+## Researcher ${id} Findings
+
+### Finding 1: <title>
+- **Source**: <URL or file:line>
+- **Summary**: 2-4 sentences
+- **Strength**: key advantage or evidence
+- **Weakness**: limitation or caveat
+
+### Finding 2: <title>
+...
+
+(3-5 high-quality findings. Quality over quantity. Include concrete evidence.)
+
+End with: "Done. ${id} contributed N findings."`,
+		gate: () => true,
+		onFail: warn,
+		transform: full,
+	};
+}
+
+const researchPhase: Parallel = {
+	kind: "parallel",
+	steps: [
+		researcherStep("R1"),
+		researcherStep("R2"),
+		researcherStep("R3"),
+		researcherStep("R4"),
+		researcherStep("R5"),
+	],
+	merge: concat,
+};
+
+// ── Phase 3: Consolidate ──────────────────────────────────────────────────
+
+const consolidate: Step = {
+	kind: "step",
+	label: "Consolidate",
+	model: "sonnet",
+	tools: [],
+	prompt: `You are the lead researcher. All 5 agents have finished searching.
+
+Original question: "$ORIGINAL"
+
+Below is the combined output from all 5 researchers. Your tasks:
+1. Identify and merge duplicate findings (same insight, different wording).
+   When merging, attribute to all researchers who found it (e.g. [R1][R3]).
+2. Number every unique finding [F1], [F2], … [FN].
+3. Output the consolidated list in this format:
+
+# Consolidated Findings
+
+## [F1] <Title>
+- **Found by**: [R1][R3]
+- **Summary**: <merged summary>
+- **Strength**: <best strength from all versions>
+- **Weakness**: <most important caveat>
+
+## [F2] …
+
+(Include ALL unique findings. Do not drop any.)
+
+---
+## All Researcher Outputs
+$INPUT`,
+	gate: () => true,
+	onFail: warn,
+	transform: full,
+};
+
+// ── Phase 4: Vote ─────────────────────────────────────────────────────────
+
+function voterStep(id: "V1" | "V2" | "V3" | "V4" | "V5"): Step {
+	return {
+		kind: "step",
+		label: `Voter ${id}`,
+		model: "flash",
+		tools: [],
+		prompt: `You are voter ${id} in a democratic research evaluation.
+
+Original question: "$ORIGINAL"
+
+Below are all consolidated findings. Score EACH finding [F1], [F2], … from 1-10:
+- **10**: Essential, directly answers the question with strong evidence
+- **7-9**: Highly relevant, well-supported
+- **4-6**: Partially relevant or weakly supported
+- **1-3**: Tangential, weak, or already widely known
+
+Output ONLY your scorecard (no preamble):
+
+## Scorecard ${id}
+
+| Finding | Score | Argument |
+|---------|-------|----------|
+| [F1] <title> | 8 | <one sentence why> |
+| [F2] <title> | 5 | <one sentence why> |
+…
+
+---
+## Consolidated Findings
+$INPUT`,
+		gate: () => true,
+		onFail: warn,
+		transform: full,
+	};
+}
+
+const votePhase: Parallel = {
+	kind: "parallel",
+	steps: [
+		voterStep("V1"),
+		voterStep("V2"),
+		voterStep("V3"),
+		voterStep("V4"),
+		voterStep("V5"),
+	],
+	merge: concat,
+};
+
+// ── Phase 5: Synthesize ───────────────────────────────────────────────────
+
+const synthesize: Step = {
+	kind: "step",
+	label: "Synthesize",
+	model: "sonnet",
+	tools: [],
+	prompt: `You are the lead researcher producing the final synthesis.
+
+Original question: "$ORIGINAL"
+
+The input below contains all 5 voter scorecards. Do the following:
+
+1. **Tally scores**: For each finding [F1], [F2], …, calculate the average across all 5 voters.
+2. **Classify**:
+   - Average ≥ 7.0 → ✅ Accepted
+   - Average 5.0–6.9 → ⚠️  Contested
+   - Average < 5.0 → ❌ Rejected
+3. **Resolve ties**: If two accepted findings have averages within 0.5, note the tie.
+4. **Write the final answer** that:
+   - Directly answers "$ORIGINAL"
+   - Integrates accepted findings in ranked order
+   - Notes contested findings with their debate summary
+   - Includes any strong dissenting votes (voter scored an accepted finding < 5)
+
+Output the complete synthesis inline now.
+
+---
+## All Voter Scorecards
+$INPUT`,
+	gate: () => true,
+	onFail: warn,
+	transform: full,
+};
+
+// ── Pipeline Assembly ─────────────────────────────────────────────────────
+
+export const pipeline: Runnable = {
+	kind: "sequential",
+	steps: [
+		plan, //  1️⃣  explore codebase → structured plan text
+		researchPhase, //  2️⃣  5 parallel researchers → concat findings
+		consolidate, //  3️⃣  deduplicate → numbered findings
+		votePhase, //  4️⃣  5 parallel voters → concat scorecards
+		synthesize, //  5️⃣  tally + rank + final answer
+	],
+} satisfies Sequential;

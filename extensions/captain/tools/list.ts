@@ -11,8 +11,8 @@ export function registerListTool(pi: ExtensionAPI, state: CaptainState) {
 		parameters: Type.Object({}),
 
 		async execute(_id, _params, _signal, _onUpdate, ctx) {
-			const _cwd = ctx?.cwd ?? process.cwd();
-			const lines = state.buildPipelineListLines();
+			const cwd = ctx?.cwd ?? process.cwd();
+			const lines = state.buildPipelineListLines(cwd);
 
 			if (lines.length === 0) {
 				return {

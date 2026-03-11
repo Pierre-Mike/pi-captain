@@ -6,8 +6,8 @@ import { describeRunnable } from "../utils/index.js";
 
 // ── Helpers extracted to keep execute() complexity low ────────────────────
 
-function listPresets(state: CaptainState, _cwd: string) {
-	const presets = state.discoverPresets();
+function listPresets(state: CaptainState, cwd: string) {
+	const presets = state.discoverPresets(cwd);
 	if (presets.length === 0) {
 		return {
 			content: [
@@ -86,11 +86,11 @@ export function registerLoadTool(pi: ExtensionAPI, state: CaptainState) {
 		name: "captain_load",
 		label: "Captain Load",
 		description: [
-			"Load a precreated pipeline from a JSON file. Accepts either:",
+			"Load a precreated pipeline from a .ts file or builtin preset. Accepts either:",
 			"  - A preset name (e.g. 'research-and-summarize') from builtin samples or .pi/pipelines/",
-			"  - An absolute or relative file path to a pipeline JSON file",
+			"  - An absolute or relative file path to a pipeline .ts file",
 			"",
-			"Pipeline JSON format: { agents: { ... }, pipeline: { kind, ... } }",
+			"Pipeline TS format: export const pipeline: Runnable = { kind, ... }",
 			"Use action 'list' to see all available presets.",
 		].join("\n"),
 		parameters: Type.Object({

@@ -2,7 +2,41 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
 import type { CaptainState } from "../state.js";
+import type { PipelineState, StepResult } from "../types.js";
 import { statusIcon } from "../utils/index.js";
+
+// ── Formatting helpers ─────────────────────────────────────────────────────
+
+function stepLine(r: StepResult): string {
+	const gate = r.gateResult
+		? ` [gate: ${r.gateResult.passed ? "pass" : "fail"}]`
+		: "";
+	const err = r.error ? ` — ${r.error}` : "";
+	return `${statusIcon(r.status)} ${r.label}: ${r.status} (${(r.elapsed / 1000).toFixed(1)}s)${gate}${err}`;
+}
+
+function buildStatusLines(s: PipelineState): string[] {
+	const elapsed =
+		s.endTime && s.startTime
+			? ` (${((s.endTime - s.startTime) / 1000).toFixed(1)}s total)`
+			: "";
+
+	const lines = [
+		`Pipeline: ${s.name} — Status: ${s.status}`,
+		s.startTime ? `Started: ${new Date(s.startTime).toISOString()}` : "",
+		s.endTime ? `Ended: ${new Date(s.endTime).toISOString()}${elapsed}` : "",
+		"",
+		"── Steps ──",
+		...s.results.map(stepLine),
+	].filter(Boolean);
+
+	if (s.finalOutput) {
+		lines.push("", "── Final Output ──", s.finalOutput.slice(0, 2000));
+	}
+	return lines;
+}
+
+// ── Tool registration ──────────────────────────────────────────────────────
 
 export function registerStatusTool(pi: ExtensionAPI, state: CaptainState) {
 	pi.registerTool({
@@ -36,23 +70,7 @@ export function registerStatusTool(pi: ExtensionAPI, state: CaptainState) {
 				};
 			}
 
-			const s = state.runningState;
-			const lines = [
-				`Pipeline: ${s.name} — Status: ${s.status}`,
-				s.startTime ? `Started: ${new Date(s.startTime).toISOString()}` : "",
-				s.endTime ? `Ended: ${new Date(s.endTime).toISOString()}` : "",
-				"",
-				"── Steps ──",
-				...s.results.map(
-					(r) =>
-						`${statusIcon(r.status)} ${r.label}: ${r.status} (${(r.elapsed / 1000).toFixed(1)}s)${r.gateResult ? ` [gate: ${r.gateResult.passed ? "pass" : "fail"}]` : ""}${r.error ? ` — ${r.error}` : ""}`,
-				),
-			].filter(Boolean);
-
-			if (s.finalOutput) {
-				lines.push("", "── Final Output ──", s.finalOutput.slice(0, 2000));
-			}
-
+			const lines = buildStatusLines(state.runningState);
 			return {
 				content: [{ type: "text", text: lines.join("\n") }],
 				details: undefined,

@@ -1,3 +1,5 @@
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
@@ -10,9 +12,9 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 		name: "captain_generate",
 		label: "Captain Generate",
 		description: [
-			"Generate a pipeline on-the-fly using LLM. Inspects available",
-			"gate types and step patterns, then produces a complete pipeline spec.",
-			"The generated pipeline is immediately registered and ready to run.",
+			"Generate a TypeScript pipeline file on-the-fly using LLM.",
+			"The generated .ts file is saved to .pi/pipelines/<name>.ts,",
+			"immediately registered, and ready to run — fully type-safe.",
 			"",
 			"Examples:",
 			'  captain_generate({ goal: "review this PR for security and quality" })',
@@ -26,7 +28,7 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 			dryRun: Type.Optional(
 				Type.Boolean({
 					description:
-						"If true, show the generated spec without registering it",
+						"If true, show the generated TypeScript without saving or registering it",
 				}),
 			),
 		}),
@@ -65,14 +67,10 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 
 				const generated = await generatePipeline(
 					params.goal,
-					{},
 					ctx.model,
 					apiKey,
 					signal ?? undefined,
 				);
-
-				const specJson = JSON.stringify(generated.pipeline, null, 2);
-				const summary = describeRunnable(generated.pipeline, 0);
 
 				if (params.dryRun) {
 					return {
@@ -83,13 +81,10 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 									`🔍 Dry Run — Generated pipeline "${generated.name}"`,
 									`Description: ${generated.description}`,
 									"",
-									"── Structure ──",
-									summary,
+									"── TypeScript Source ──",
+									generated.tsSource,
 									"",
-									"── Full Spec (JSON) ──",
-									specJson,
-									"",
-									`To register: call captain_generate with the same goal and dryRun=false`,
+									`To save & register: call captain_generate with the same goal and dryRun=false`,
 								].join("\n"),
 							},
 						],
@@ -97,20 +92,29 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 					};
 				}
 
-				state.pipelines[generated.name] = { spec: generated.pipeline };
+				// Save to .pi/pipelines/<name>.ts
+				const piDir = join(ctx.cwd, ".pi", "pipelines");
+				if (!existsSync(piDir)) mkdirSync(piDir, { recursive: true });
+				const filePath = join(piDir, `${generated.name}.ts`);
+				writeFileSync(filePath, generated.tsSource, "utf-8");
+
+				// Load via the TS pipeline mechanism (no JSON deserialization needed)
+				const loaded = await state.loadTsPipelineFile(filePath);
+				const summary = describeRunnable(loaded.spec, 0);
 
 				return {
 					content: [
 						{
 							type: "text",
 							text: [
-								`✓ Generated and registered pipeline "${generated.name}"`,
+								`✓ Generated and registered pipeline "${loaded.name}"`,
 								`Description: ${generated.description}`,
+								`Saved to: .pi/pipelines/${generated.name}.ts`,
 								"",
 								"── Structure ──",
 								summary,
 								"",
-								`Run it with: captain_run({ name: "${generated.name}", input: "<your input>" })`,
+								`Run it with: captain_run({ name: "${loaded.name}", input: "<your input>" })`,
 							].join("\n"),
 						},
 					],

@@ -32,33 +32,13 @@
     },
     {
       "type": "group",
-      "id": "i8r9s0t1u2v3w4x5",
-      "x": -260,
-      "y": 2660,
-      "width": 860,
-      "height": 540,
-      "color": "6",
-      "label": "SUGGESTED ADDITIONS"
-    },
-    {
-      "type": "group",
-      "id": "grp_def_layer_01ab",
-      "x": -560,
-      "y": -120,
-      "width": 900,
-      "height": 480,
-      "color": "6",
-      "label": "DEFINITION FILES"
-    },
-    {
-      "type": "group",
       "id": "g4d5e6f7g8h9i0j1",
       "x": 400,
-      "y": 400,
+      "y": 360,
       "width": 560,
-      "height": 580,
+      "height": 640,
       "color": "3",
-      "label": "GATE TYPES"
+      "label": "GATE & FUNCTION TYPES"
     },
     {
       "type": "group",
@@ -117,80 +97,44 @@
       "label": "pool (nested)"
     },
     {
+      "type": "group",
+      "id": "grp_pipeline_ts01",
+      "x": -560,
+      "y": -120,
+      "width": 900,
+      "height": 500,
+      "color": "6",
+      "label": "PIPELINE DEFINITION"
+    },
+    {
       "type": "text",
       "id": "s3c4d5e6f7g8h9i0",
       "x": -340,
       "y": 540,
       "width": 480,
-      "height": 420,
+      "height": 460,
       "color": "2",
-      "text": "## Step (atomic unit)\n\n```ts\ninterface Step {\n  label: string;\n  agent: Agent,\n  description: string;\n  prompt: PROMT | (ctx: {\n    $INPUT: string;    // output from previous step\n    $ORIGINAL: string; // original user request\n  }) => string;\n  gate: Gate;\n  onFail: OnFail;\n  transform: Transform;\n}\n```"
+      "text": "## Step (atomic unit)\n\n```ts\ninterface Step {\n  kind: \"step\";\n  label: string;\n  model?: ModelId;     // \"sonnet\"|\"flash\"|\"haiku\"|\"opus\"\n  tools?: string[];    // e.g. [\"bash\", \"read\"]\n  temperature?: number;\n  systemPrompt?: string;\n  skills?: string[];\n  prompt: string;      // supports $INPUT, $ORIGINAL\n  gate?: Gate;\n  onFail?: OnFail;\n  transform: Transform;\n}\n```"
     },
     {
       "type": "text",
-      "id": "a0t1u2v3w4x5y6z7",
-      "x": -240,
-      "y": 2700,
-      "width": 400,
-      "height": 240,
-      "text": "### Error / Branching\n```ts\ntype OnFail =\n  | { action: \"retry\"; max?: number }\n  | { action: \"skip\" }\n  | { action: \"fallback\"; step: Step };\n```\nNon-linear paths when gates fail"
-    },
-    {
-      "type": "text",
-      "id": "b1u2v3w4x5y6z7a8",
-      "x": 200,
-      "y": 2700,
-      "width": 380,
-      "height": 240,
-      "text": "### Merge Strategy\n```ts\ntype MergeStrategy =\n  | \"vote\" | \"rank\"\n  | \"firstPass\" | \"concat\" | \"awaitAll\";\n```\nHow parallel results combine"
-    },
-    {
-      "type": "text",
-      "id": "d9s0t1u2v3w4x5y6",
-      "x": -240,
-      "y": 2960,
-      "width": 400,
-      "height": 220,
-      "text": "### Data Flow\n```ts\ntype Transform =\n  | { kind: \"full\" }\n  | { kind: \"extract\"; key: string }\n  | { kind: \"summarize\" };\n```\nControls what passes between steps"
-    },
-    {
-      "type": "text",
-      "id": "c2v3w4x5y6z7a8b9",
-      "x": 200,
-      "y": 2960,
-      "width": 380,
-      "height": 220,
-      "text": "### Convergence\n```ts\ntype Converge =\n  | \"gatePass\" | \"outputStable\"\n  | \"userStop\";\n```\nSmart loop termination, not just max N"
-    },
-    {
-      "type": "text",
-      "id": "o7q8r9s0t1u2v3w4",
-      "x": -820,
-      "y": 2660,
-      "width": 500,
-      "height": 440,
-      "color": "5",
-      "text": "## Orchestrator\n\nMeta-layer that controls pipeline execution\n\n```ts\ninterface Orchestrator extends Step {\n  options: (\"createPipeline\" | \"useParallel\")[];\n  loop: {\n    max: number;\n    converge: Converge;\n  };\n  selfModify: boolean; // can rewrite its own plan\n}\n```\n\n**HIGHER_STEP**: an orchestrator *is* a step\n→ recursive composition"
-    },
-    {
-      "type": "text",
-      "id": "de119f8dc5e194e2",
-      "x": -100,
-      "y": -80,
-      "width": 420,
-      "height": 400,
-      "color": "6",
-      "text": "## 📝 prompt/template.md\n\nMarkdown with **variable interpolation**\n\n```markdown\nAnalyze this code:\n$INPUT\n\nOriginal request:\n$ORIGINAL\n\nFocus on: ${focus_area}\n```\n\n`$INPUT` — previous step output\n`$ORIGINAL` — user's original request\n`${var}` — custom context vars"
-    },
-    {
-      "type": "text",
-      "id": "7a81ac9098ab4af7",
+      "id": "pip01a2b3c4d5e6f7",
       "x": -540,
       "y": -80,
       "width": 400,
-      "height": 400,
+      "height": 440,
       "color": "6",
-      "text": "## 📦 agent/build.md\n\nDeclares an agent's identity & capabilities\n\n```yaml\nname: researcher\ndescription: \"Deep-dive web search\"\ntools:\n  - web_search\n  - read_file\nprompt: ./prompts/research.md\nmodel: sonnet\ntemperature: 0.3\n```\n\n→ Feeds into `Step.agent`"
+      "text": "## 📦 pipeline.ts\n\nExport any `Runnable` — fully type-safe\n\n```ts\nimport { retry, skip } from \"./gates/on-fail.js\";\nimport { command } from \"./gates/presets.js\";\nimport { concat, vote } from \"./merge.js\";\nimport { full } from \"./transforms/presets.js\";\n\nexport const pipeline: Parallel = {\n  kind: \"parallel\",\n  steps: [researchStep, analyzeStep],\n  merge: vote,\n  gate: command(\"bun test\"),\n  onFail: retry(2),\n  transform: full,\n};\n```\n\nLoad with: `captain load <path>`"
+    },
+    {
+      "type": "text",
+      "id": "pre01b2c3d4e5f6g7",
+      "x": -100,
+      "y": -80,
+      "width": 400,
+      "height": 440,
+      "color": "6",
+      "text": "## 🔧 Built-in Presets\n\n**Gates** (`gates/presets.ts`)\n`command(cmd)` — exit 0 passes\n`file(path)` — file must exist\n`regex(pat)` — output matches\n`allOf(...gates)`, `anyOf(...gates)`\n`llm(prompt)`, `llmFast(prompt)`\n\n**OnFail** (`gates/on-fail.ts`)\n`retry(max?)`, `retryWithDelay(max, ms)`\n`fallback(step)`, `skip`, `warn`\n\n**Transforms** (`transforms/presets.ts`)\n`full`, `extract(key)`, `summarize()`\n\n**Merge** (`merge.ts`)\n`concat`, `awaitAll`, `rank`, `vote`, `firstPass`"
     },
     {
       "type": "text",
@@ -238,7 +182,7 @@
       "y": 1420,
       "width": 450,
       "height": 310,
-      "text": "Replicate **one** step N times\nSame type, different inputs\n\n```ts\nconst p: Pool = {\n  kind: \"pool\",\n  step: searchStep,\n  count: 5,\n  merge: { strategy: \"vote\" },\n};\n```"
+      "text": "Replicate **one** step N times\nSame type, different inputs\n\n```ts\nconst p: Pool = {\n  kind: \"pool\",\n  step: searchStep,\n  count: 5,\n  merge: vote,\n};\n```"
     },
     {
       "type": "text",
@@ -257,7 +201,7 @@
       "y": 1420,
       "width": 450,
       "height": 310,
-      "text": "Run **different** steps concurrently\nEach has its own prompt & gate\n\n```ts\nconst par: Parallel = {\n  kind: \"parallel\",\n  steps: [search, lint, typecheck],\n  merge: { strategy: \"awaitAll\" },\n};\n```"
+      "text": "Run **different** steps concurrently\nEach has its own prompt & gate\n\n```ts\nconst par: Parallel = {\n  kind: \"parallel\",\n  steps: [search, lint, typecheck],\n  merge: awaitAll,\n};\n```"
     },
     {
       "type": "text",
@@ -267,7 +211,7 @@
       "width": 480,
       "height": 500,
       "color": "3",
-      "text": "## 🌲 Worktree Isolation Rule\n\nEvery **parallel boundary** automatically creates\na git worktree — no config needed.\n\n```ts\n// Derived path — zero config\ntype WorktreePath =\n  `.worktrees/${string}-${string}-${string}`;\n```\n\n**The rule is simple:**\n- `parallel` or `pool` → each branch gets its own worktree\n- `sequential` steps *inside* a parallel share that worktree\n- `sequential` steps *outside* parallel → main tree\n- Nested parallel → nested worktrees\n\n**parallel = worktree, always.**\nZero configuration. The topology *is* the isolation model."
+      "text": "## 🌲 Worktree Isolation Rule\n\nEvery **parallel boundary** automatically creates\na git worktree — no config needed.\n\n```ts\n// Derived path — zero config\n// .worktrees/{pipeline}-{branch}-{hash}\ntype WorktreePath = string;\n```\n\n**The rule is simple:**\n- `parallel` or `pool` → each branch gets its own worktree\n- `sequential` steps *inside* a parallel share that worktree\n- `sequential` steps *outside* parallel → main tree\n- Nested parallel → nested worktrees\n\n**parallel = worktree, always.**\nZero configuration. The topology *is* the isolation model."
     },
     {
       "type": "text",
@@ -277,16 +221,16 @@
       "width": 480,
       "height": 520,
       "color": "3",
-      "text": "## Merge Step (main tree)\n\nAfter parallel completes, merge runs on **main tree**:\n\n```ts\nconst mergeStep: Step = {\n  label: \"merge\",\n  description: \"Reconcile worktree diffs\",\n  prompt: (ctx) =>\n    `${ctx.$INPUT}\\n${ctx.$ORIGINAL}`,\n  gate: {\n    type: \"command\",\n    value: \"git diff --check && bun test\",\n  },\n  onFail: { action: \"retry\", max: 3 },\n  transform: { kind: \"full\" },\n};\n```\n\nReads worktree diffs → resolves conflicts →\nvalidated by gate → pipeline continues on main tree.\n**Just a regular step.** No special merge machinery."
+      "text": "## Merge Step (main tree)\n\nAfter parallel completes, merge runs on **main tree**:\n\n```ts\nconst mergeStep: Step = {\n  kind: \"step\",\n  label: \"merge\",\n  prompt: (ctx) =>\n    `${ctx.$INPUT}\\n${ctx.$ORIGINAL}`,\n  gate: command(\"git diff --check && bun test\"),\n  onFail: retry(3),\n  transform: full,\n};\n```\n\nReads worktree diffs → resolves conflicts →\nvalidated by gate → pipeline continues on main tree.\n**Just a regular step.** No special merge machinery."
     },
     {
       "type": "text",
       "id": "g5e6f7g8h9i0j1k2",
       "x": 420,
-      "y": 430,
+      "y": 390,
       "width": 520,
-      "height": 530,
-      "text": "```ts\ntype Gate =\n  | { type: \"command\"; value: string }    // exit 0 = pass\n  | { type: \"user\"; value: true }          // human approval\n  | { type: \"file\"; value: string }        // file exists?\n  | { type: \"assert\"; fn: (out: string) => boolean };\n\ntype OnFail =\n  | { action: \"retry\"; max?: number }\n  | { action: \"skip\" }\n  | { action: \"fallback\"; step: Step };\n\ntype Transform =\n  | { kind: \"full\" }\n  | { kind: \"extract\"; key: string }\n  | { kind: \"summarize\" };\n```"
+      "height": 590,
+      "text": "## Gate & Function Types\n\n```ts\n// Gate — pure function\ntype Gate = (params: {\n  output: string;\n  ctx?: GateCtx;\n}) => true | string | Promise<true | string>;\n// true = pass, string = failure reason\n\n// OnFail — pure function\ntype OnFail = (ctx: OnFailCtx) =>\n  OnFailResult | Promise<OnFailResult>;\n\ntype OnFailResult =\n  | { action: \"retry\" }\n  | { action: \"fail\" }\n  | { action: \"skip\" }\n  | { action: \"warn\" }\n  | { action: \"fallback\"; step: Step };\n\n// Transform — pure function\ntype Transform = (params: {\n  output: string;\n  original: string;\n  ctx: TransformCtx;\n}) => string | Promise<string>;\n\n// MergeFn — pure function\ntype MergeFn = (\n  outputs: string[],\n  ctx: MergeCtx,\n) => string | Promise<string>;\n```"
     },
     {
       "type": "text",
@@ -296,7 +240,7 @@
       "width": 420,
       "height": 700,
       "color": "2",
-      "text": "## Core Type Union\n\n```ts\n// Every composable unit is a Runnable\ntype Runnable =\n  | Step\n  | Sequential\n  | Pool\n  | Parallel;\n\ninterface Sequential {\n  kind: \"sequential\";\n  steps: Runnable[];\n  gate?: Gate;      // validates final output\n  onFail?: OnFail;  // retry = re-run entire sequence\n}\n\ninterface Pool {\n  kind: \"pool\";\n  step: Runnable;\n  count: number;\n  merge: { strategy: MergeStrategy };\n  gate?: Gate;      // validates merged output\n  onFail?: OnFail;  // retry = re-run all N + re-merge\n}\n\ninterface Parallel {\n  kind: \"parallel\";\n  steps: Runnable[];\n  merge: { strategy: MergeStrategy };\n  gate?: Gate;      // validates merged output\n  onFail?: OnFail;  // retry = re-run all + re-merge\n}\n```"
+      "text": "## Core Type Union\n\n```ts\n// Every composable unit is a Runnable\ntype Runnable =\n  | Step\n  | Sequential\n  | Pool\n  | Parallel;\n\ninterface Sequential {\n  kind: \"sequential\";\n  steps: Runnable[];\n  gate?: Gate;\n  onFail?: OnFail;\n  transform?: Transform;\n}\n\ninterface Pool {\n  kind: \"pool\";\n  step: Runnable;\n  count: number;\n  merge: MergeFn;\n  gate?: Gate;\n  onFail?: OnFail;\n  transform?: Transform;\n}\n\ninterface Parallel {\n  kind: \"parallel\";\n  steps: Runnable[];\n  merge: MergeFn;\n  gate?: Gate;\n  onFail?: OnFail;\n  transform?: Transform;\n}\n```"
     },
     {
       "type": "text",
@@ -306,7 +250,7 @@
       "width": 500,
       "height": 130,
       "color": "1",
-      "text": "# Agent orchecstration\n\nComposable steps → groups → orchestrator\n**Fully type-safe — TypeScript all the way down**"
+      "text": "# Agent Orchestration\n\nComposable steps → groups → pipelines\n**Fully type-safe — TypeScript all the way down**"
     },
     {
       "type": "text",
@@ -316,7 +260,7 @@
       "width": 700,
       "height": 320,
       "color": "1",
-      "text": "```ts\n// Recursive composition — type-safe nesting\nconst pipeline: Parallel = {\n  kind: \"parallel\",\n  steps: [\n    { kind: \"parallel\", steps: [search, analyze],\n      merge: { strategy: \"awaitAll\" } },\n    { kind: \"sequential\", steps: [\n      { kind: \"pool\", step: planBuild, count: 3,\n        merge: { strategy: \"rank\" } },\n      reviewStep,\n    ]},\n  ],\n  merge: { strategy: \"awaitAll\" },\n};\n```"
+      "text": "```ts\n// Recursive composition — type-safe nesting\nconst pipeline: Parallel = {\n  kind: \"parallel\",\n  steps: [\n    { kind: \"parallel\", steps: [search, analyze],\n      merge: awaitAll },\n    { kind: \"sequential\", steps: [\n      { kind: \"pool\", step: planBuild, count: 3,\n        merge: rank },\n      reviewStep,\n    ]},\n  ],\n  merge: awaitAll,\n};\n```"
     },
     {
       "type": "text",
@@ -393,7 +337,7 @@
       "width": 150,
       "height": 55,
       "color": "2",
-      "text": "**step: review **"
+      "text": "**step: review**"
     },
     {
       "type": "text",
@@ -414,7 +358,7 @@
       "toNode": "g4d5e6f7g8h9i0j1",
       "toSide": "left",
       "toEnd": "arrow",
-      "label": "gate types"
+      "label": "gate & fn types"
     },
     {
       "id": "edge004",
@@ -460,34 +404,6 @@
       "toEnd": "none"
     },
     {
-      "id": "edge006",
-      "fromNode": "rx01a2b3c4d5e6f7",
-      "fromSide": "bottom",
-      "toNode": "o7q8r9s0t1u2v3w4",
-      "toSide": "top",
-      "toEnd": "arrow",
-      "label": "controlled by"
-    },
-    {
-      "id": "edge007",
-      "fromNode": "o7q8r9s0t1u2v3w4",
-      "fromSide": "right",
-      "toNode": "i8r9s0t1u2v3w4x5",
-      "toSide": "left",
-      "toEnd": "arrow",
-      "label": "needs"
-    },
-    {
-      "id": "edge008",
-      "fromNode": "o7q8r9s0t1u2v3w4",
-      "fromSide": "top",
-      "toNode": "s3c4d5e6f7g8h9i0",
-      "toSide": "left",
-      "toEnd": "arrow",
-      "color": "5",
-      "label": "HIGHER_STEP (recursive)"
-    },
-    {
       "id": "edge012",
       "fromNode": "rx04d5e6f7g8h9i0",
       "fromSide": "right",
@@ -515,32 +431,6 @@
       "label": "composes"
     },
     {
-      "id": "be5411d3a5b3ef3d",
-      "fromNode": "7a81ac9098ab4af7",
-      "fromSide": "bottom",
-      "toNode": "s3c4d5e6f7g8h9i0",
-      "toSide": "top",
-      "toEnd": "arrow",
-      "label": "defines agent"
-    },
-    {
-      "id": "44377281bfc5a8af",
-      "fromNode": "de119f8dc5e194e2",
-      "fromSide": "bottom",
-      "toNode": "s3c4d5e6f7g8h9i0",
-      "toSide": "top",
-      "toEnd": "arrow",
-      "label": "defines prompt"
-    },
-    {
-      "id": "0df47e8ccc41f854",
-      "fromNode": "t1a2b3c4d5e6f7g8",
-      "fromSide": "bottom",
-      "toNode": "grp_def_layer_01ab",
-      "toSide": "top",
-      "toEnd": "arrow"
-    },
-    {
       "id": "f91ca9ed4281b288",
       "fromNode": "rx08h9i0j1k2l3m4",
       "fromSide": "bottom",
@@ -556,6 +446,32 @@
       "toSide": "left",
       "toEnd": "arrow",
       "label": "extends types"
+    },
+    {
+      "id": "pip01e2f3g4h5i6j7",
+      "fromNode": "t1a2b3c4d5e6f7g8",
+      "fromSide": "bottom",
+      "toNode": "grp_pipeline_ts01",
+      "toSide": "top",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "pip02f3g4h5i6j7k8",
+      "fromNode": "pip01a2b3c4d5e6f7",
+      "fromSide": "bottom",
+      "toNode": "s3c4d5e6f7g8h9i0",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "defines pipeline"
+    },
+    {
+      "id": "pre02g4h5i6j7k8l9",
+      "fromNode": "pre01b2c3d4e5f6g7",
+      "fromSide": "bottom",
+      "toNode": "s3c4d5e6f7g8h9i0",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "used in steps"
     }
   ]
 }

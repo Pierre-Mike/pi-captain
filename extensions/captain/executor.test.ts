@@ -44,6 +44,7 @@ mock.module("@mariozechner/pi-coding-agent", () => ({
 			},
 			abort: () => {},
 			dispose: () => {},
+			setActiveToolsByName: () => {},
 		},
 	}),
 	createReadTool: () => ({ name: "read" }),
@@ -256,6 +257,8 @@ describe("executeRunnable: sequential", () => {
 						},
 						abort: () => {},
 						dispose: () => {},
+
+						setActiveToolsByName: () => {},
 					},
 				};
 			},
@@ -361,6 +364,8 @@ describe("executeRunnable: sequential", () => {
 					prompt: async () => {},
 					abort: () => {},
 					dispose: () => {},
+
+					setActiveToolsByName: () => {},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -409,6 +414,8 @@ describe("executeRunnable: sequential", () => {
 					prompt: async () => {},
 					abort: () => {},
 					dispose: () => {},
+
+					setActiveToolsByName: () => {},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -458,6 +465,8 @@ describe("executeRunnable: sequential", () => {
 					prompt: async () => {},
 					abort: () => {},
 					dispose: () => {},
+
+					setActiveToolsByName: () => {},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -511,6 +520,8 @@ describe("executeRunnable: parallel", () => {
 					prompt: async () => {},
 					abort: () => {},
 					dispose: () => {},
+
+					setActiveToolsByName: () => {},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -567,6 +578,8 @@ describe("executeRunnable: parallel", () => {
 					prompt: async () => {},
 					abort: () => {},
 					dispose: () => {},
+
+					setActiveToolsByName: () => {},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -613,6 +626,8 @@ describe("executeRunnable: parallel", () => {
 					},
 					abort: () => {},
 					dispose: () => {},
+
+					setActiveToolsByName: () => {},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -664,6 +679,8 @@ describe("executeRunnable: pool", () => {
 					prompt: async () => {},
 					abort: () => {},
 					dispose: () => {},
+
+					setActiveToolsByName: () => {},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -720,6 +737,8 @@ describe("executeRunnable: pool", () => {
 					},
 					abort: () => {},
 					dispose: () => {},
+
+					setActiveToolsByName: () => {},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -768,6 +787,8 @@ describe("executeRunnable: pool", () => {
 					prompt: async () => {},
 					abort: () => {},
 					dispose: () => {},
+
+					setActiveToolsByName: () => {},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -816,6 +837,8 @@ describe("executeRunnable: lifecycle callbacks", () => {
 					prompt: async () => {},
 					abort: () => {},
 					dispose: () => {},
+
+					setActiveToolsByName: () => {},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -872,6 +895,8 @@ describe("executeRunnable: lifecycle callbacks", () => {
 					prompt: async () => {},
 					abort: () => {},
 					dispose: () => {},
+
+					setActiveToolsByName: () => {},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),

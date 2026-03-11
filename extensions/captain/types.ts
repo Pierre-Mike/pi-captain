@@ -23,6 +23,8 @@ export interface GateCtx {
 	apiKey?: string;
 	// biome-ignore lint/suspicious/noExplicitAny: registry type lives in executor
 	modelRegistry?: any;
+	/** Names of tools that were actually called during the step (e.g. ["bash", "web_search"]) */
+	toolsUsed?: string[];
 }
 
 /**
@@ -139,6 +141,18 @@ export type MergeFn = (
 
 // ── Composition Types (infinitely nestable) ────────────────────────────────
 
+/**
+ * Model identifier passed to `--model`. Accepts known shorthand aliases
+ * (resolved via partial match in the model registry) or any full model ID.
+ *
+ * @example
+ * model: "sonnet"   // claude-sonnet-*
+ * model: "flash"    // gemini-flash-* or similar
+ * model: "haiku"    // claude-haiku-*
+ * model: "opus"     // claude-opus-*
+ */
+export type ModelId = "sonnet" | "flash" | "haiku" | "opus" | (string & {});
+
 /** Atomic unit — a single `pi --print` invocation */
 export interface Step {
 	kind: "step";
@@ -146,7 +160,7 @@ export interface Step {
 
 	// ── Step config ───────────────────────────────────────────────────────
 	/** Model identifier (e.g. "sonnet", "flash"). Passed as --model. */
-	model?: string;
+	model?: ModelId;
 	/** Tool names to enable. Passed as --tools read,bash,edit. */
 	tools?: string[];
 	/** Temperature for the LLM call. */
@@ -223,6 +237,8 @@ export interface StepResult {
 	elapsed: number; // ms
 	group?: string; // parallel/pool group label this step belongs to
 	toolCount?: number; // number of tools available to this step
+	toolCallCount?: number; // number of tool calls actually made during this step
+	model?: string; // resolved model ID used for this step
 }
 
 export interface PipelineState {
@@ -234,6 +250,8 @@ export interface PipelineState {
 	currentSteps: Set<string>;
 	/** Accumulated stream text keyed by step label */
 	currentStepStreams: Map<string, string>;
+	/** Live tool-call count keyed by step label (incremented on each tool_execution_end) */
+	currentStepToolCalls: Map<string, number>;
 	startTime?: number;
 	endTime?: number;
 	finalOutput?: string;

@@ -34,8 +34,15 @@ export async function createWorktree(
 	branchLabel: string,
 	index: number,
 	signal?: AbortSignal,
+	/**
+	 * Fix 2: optional pre-resolved hint — when provided the function skips its own
+	 * `git rev-parse` subprocess, saving one round-trip per parallel branch.
+	 */
+	isGitRepoHint?: boolean,
 ): Promise<{ worktreePath: string; branchName: string } | null> {
-	if (!(await isGitRepo(exec, cwd))) return null;
+	const gitRepo =
+		isGitRepoHint !== undefined ? isGitRepoHint : await isGitRepo(exec, cwd);
+	if (!gitRepo) return null;
 
 	const sanitized = `${pipelineName}-${branchLabel}-${index}`.replace(
 		/[^a-zA-Z0-9_-]/g,
@@ -45,7 +52,8 @@ export async function createWorktree(
 	const branchName = `captain/${sanitized}`;
 
 	try {
-		// Clean up any stale worktree/branch from a previous crashed run
+		// Clean up any stale worktree/branch from a previous crashed run.
+		// These are best-effort: the resource likely doesn't exist, so failures are expected and ignored.
 		await exec(
 			"git",
 			["-C", cwd, "worktree", "remove", worktreePath, "--force"],
@@ -62,7 +70,12 @@ export async function createWorktree(
 			{ signal },
 		);
 		return { worktreePath, branchName };
-	} catch {
+	} catch (err) {
+		// Real failure creating the worktree — surface it so callers can observe the problem.
+		console.error(
+			`[captain] Failed to create worktree "${worktreePath}" (branch: ${branchName}):`,
+			err instanceof Error ? err.message : String(err),
+		);
 		return null;
 	}
 }
@@ -81,12 +94,26 @@ export async function removeWorktree(
 			["-C", cwd, "worktree", "remove", worktreePath, "--force"],
 			{ signal },
 		);
-	} catch {
-		// Worktree may already be gone
+	} catch (err) {
+		// Worktree may already be gone after a crash — only warn if it's an unexpected error
+		const msg = err instanceof Error ? err.message : String(err);
+		if (
+			!(msg.includes("is not a working tree") || msg.includes("No such file"))
+		) {
+			console.warn(
+				`[captain] worktree remove failed for "${worktreePath}": ${msg}`,
+			);
+		}
 	}
 	try {
 		await exec("git", ["-C", cwd, "branch", "-D", branchName], { signal });
-	} catch {
-		// Branch may already be gone
+	} catch (err) {
+		// Branch may already be deleted — only warn if it's an unexpected error
+		const msg = err instanceof Error ? err.message : String(err);
+		if (!(msg.includes("not found") || msg.includes("error: branch"))) {
+			console.warn(
+				`[captain] branch delete failed for "${branchName}": ${msg}`,
+			);
+		}
 	}
 }

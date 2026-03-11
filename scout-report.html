@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi-Captain Scout Report Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0f1117;
+            color: #e1e5e9;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .summary-bar {
+            background: #1a1d27;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            border: 1px solid #2d3748;
+        }
+
+        .summary-stat {
+            text-align: center;
+        }
+
+        .summary-stat .number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .summary-stat .label {
+            color: #9ca3af;
+            font-size: 0.9em;
+        }
+
+        .priority-high { color: #ef4444; }
+        .priority-medium { color: #f59e0b; }
+        .priority-low { color: #10b981; }
+
+        .my-backlog {
+            background: #1a1d27;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #2d3748;
+        }
+
+        .my-backlog h2 {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .copy-button {
+            background: #7c3aed;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s;
+        }
+
+        .copy-button:hover {
+            background: #6d28d9;
+        }
+
+        .backlog-items {
+            display: grid;
+            gap: 10px;
+        }
+
+        .backlog-item {
+            background: #2d3748;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .backlog-item .info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .remove-button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+
+        .tabs {
+            display: flex;
+            background: #1a1d27;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            border: 1px solid #2d3748;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-size: 1em;
+        }
+
+        .tab:hover {
+            background: #2d3748;
+        }
+
+        .tab.active {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .controls {
+            background: #1a1d27;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            border: 1px solid #2d3748;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            color: #9ca3af;
+        }
+
+        select {
+            background: #2d3748;
+            color: #e1e5e9;
+            border: 1px solid #4a5568;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .scout-summary {
+            background: #1a1d27;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #7c3aed;
+            border: 1px solid #2d3748;
+        }
+
+        .findings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .finding-card {
+            background: #1a1d27;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #2d3748;
+            transition: all 0.2s;
+            cursor: grab;
+            position: relative;
+        }
+
+        .finding-card:hover {
+            border-color: #7c3aed;
+            transform: translateY(-2px);
+        }
+
+        .finding-card.selected {
+            border-color: #10b981;
+            background: #1a1d27;
+        }
+
+        .finding-card.selected::before {
+            content: "✅";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.2em;
+        }
+
+        .finding-card.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .card-emoji {
+            font-size: 1.5em;
+        }
+
+        .card-title {
+            flex: 1;
+            font-weight: 600;
+            font-size: 1.1em;
+            line-height: 1.3;
+        }
+
+        .card-badges {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .badge.priority-critical { background: #dc2626; color: white; }
+        .badge.priority-high { background: #ef4444; color: white; }
+        .badge.priority-medium { background: #f59e0b; color: white; }
+        .badge.priority-low { background: #10b981; color: white; }
+
+        .badge.effort-small { background: #3b82f6; color: white; }
+        .badge.effort-medium { background: #8b5cf6; color: white; }
+        .badge.effort-large { background: #ec4899; color: white; }
+
+        .card-description {
+            color: #d1d5db;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .file-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .file-chip {
+            background: #374151;
+            color: #9ca3af;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+        }
+
+        .drop-zone {
+            min-height: 200px;
+            border: 2px dashed #4a5568;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            margin-top: 20px;
+            transition: all 0.2s;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #7c3aed;
+            background: rgba(124, 58, 237, 0.1);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .findings-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Pi-Captain Scout Report</h1>
+            <p>Interactive dashboard for codebase analysis findings</p>
+        </div>
+
+        <div class="summary-bar" id="summaryBar">
+            <!-- Dynamic content -->
+        </div>
+
+        <div class="my-backlog">
+            <h2>
+                My Backlog (<span id="backlogCount">0</span>)
+                <button class="copy-button" onclick="copyBacklogToClipboard()">Copy as Markdown</button>
+            </h2>
+            <div class="backlog-items" id="backlogItems">
+                <p style="color: #9ca3af;">Drag findings here to add them to your backlog</p>
+            </div>
+        </div>
+
+        <div class="tabs" id="tabs">
+            <!-- Dynamic content -->
+        </div>
+
+        <div id="tabContents">
+            <!-- Dynamic content -->
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+            Drop findings here to add to backlog
+        </div>
+    </div>
+
+    <script>
+        const scouts = [
+            {
+                "scout": "features",
+                "title": "Feature Opportunities",
+                "emoji": "🚀",
+                "findings": [
+                    {
+                        "id": "f1",
+                        "title": "Register Missing Tools (captain_define, captain_generate)",
+                        "priority": "high",
+                        "effort": "small",
+                        "description": "The captain_define and captain_generate tools are implemented but not registered in the main extension file. Users can't access these critical pipeline creation features through the tool interface, only slash commands.",
+                        "files": ["extensions/captain/index.ts", "extensions/captain/tools/define.ts", "extensions/captain/tools/generate.ts"]
+                    },
+                    {
+                        "id": "f2", 
+                        "title": "Pipeline Preview/Dry-run Mode",
+                        "priority": "high",
+                        "effort": "medium",
+                        "description": "Users expect to preview pipeline execution plans before running them. This is explicitly mentioned in TODO.md as a missing captain_preview tool. Would show the execution tree without actually running steps.",
+                        "files": ["extensions/captain/tools/"]
+                    },
+                    {
+                        "id": "f3",
+                        "title": "Pipeline Validation Tool", 
+                        "priority": "high",
+                        "effort": "medium",
+                        "description": "No pre-flight validation exists to catch malformed pipeline specs before execution. Users hit errors during runtime instead of getting early feedback. Mentioned in TODO.md as captain_validate.",
+                        "files": ["extensions/captain/tools/"]
+                    },
+                    {
+                        "id": "f4",
+                        "title": "Step-level Timeouts",
+                        "priority": "medium", 
+                        "effort": "medium",
+                        "description": "No timeout mechanism exists for individual steps, allowing runaway agents to block pipelines indefinitely. TODO.md specifically calls out missing timeoutMs field on steps.",
+                        "files": ["extensions/captain/types.ts", "extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "f5",
+                        "title": "Pipeline Metrics Tool",
+                        "priority": "medium",
+                        "effort": "medium", 
+                        "description": "captain_metrics tool is mentioned in README but doesn't exist. Users need visibility into token costs, latency, and success rates across pipeline runs for optimization.",
+                        "files": ["extensions/captain/tools/"]
+                    },
+                    {
+                        "id": "f6",
+                        "title": "Execution History & Resume",
+                        "priority": "medium",
+                        "effort": "large",
+                        "description": "No pipeline checkpointing or execution history exists. Users must restart entire pipelines from scratch on failures. TODO.md highlights this as a major missing feature for production workflows.",
+                        "files": ["extensions/captain/state.ts", "extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "f7",
+                        "title": "Custom Merge/Gate Strategy Extensibility",
+                        "priority": "medium",
+                        "effort": "medium",
+                        "description": "Merge strategies and gates are closed unions. Power users can't add domain-specific validators or merge logic without forking. TODO.md suggests custom function escape hatches.",
+                        "files": ["extensions/captain/merge.ts", "extensions/captain/gates/presets.ts", "extensions/captain/types.ts"]
+                    },
+                    {
+                        "id": "f8",
+                        "title": "Pipeline Clone Tool",
+                        "priority": "low",
+                        "effort": "small",
+                        "description": "Users frequently want to duplicate pipelines with slight modifications. TODO.md mentions captain_clone as a common workflow need that's currently manual.",
+                        "files": ["extensions/captain/tools/"]
+                    },
+                    {
+                        "id": "f9",
+                        "title": "Enhanced Slash Command UX",
+                        "priority": "low", 
+                        "effort": "medium",
+                        "description": "captain_list should show run status and timing, not just structure. Tab-completion could be richer for pipeline arguments. Several UX improvements mentioned in TODO.md quick wins.",
+                        "files": ["extensions/captain/ui/commands.ts", "extensions/captain/tools/list.ts"]
+                    },
+                    {
+                        "id": "f10",
+                        "title": "More Pipeline Presets",
+                        "priority": "low",
+                        "effort": "medium", 
+                        "description": "Only 9 builtin presets exist. TODO.md suggests adding captain:bug-triage, captain:doc-sync, captain:security-audit, captain:migration for common workflows that users would expect.",
+                        "files": ["extensions/captain/pipelines/"]
+                    }
+                ],
+                "summary": "Pi-captain has a solid foundation but several critical tools are implemented but not exposed (captain_define, captain_generate), and key workflow features like pipeline preview, validation, and execution history are missing. The biggest impact opportunities are: (1) fixing the tool registration bug to unlock existing functionality, (2) adding pipeline preview/validation for better UX, and (3) implementing execution persistence for production robustness. The codebase is well-architected to support these extensions."
+            },
+            {
+                "scout": "bugs",
+                "title": "Bug Hunt",
+                "emoji": "🐛",
+                "findings": [
+                    {
+                        "id": "b1",
+                        "title": "Session disposal race condition in prefetch logic",
+                        "priority": "critical",
+                        "effort": "medium",
+                        "description": "In executor.ts, the prefetch session disposal logic has race conditions. When pipelines are cancelled or fail, the cleanup code `nextPrefetch.then((w) => w?.session.dispose()).catch(() => {});` may execute while the prefetch promise is still pending, potentially failing to dispose sessions properly and causing memory leaks. The .catch(() => {}) silently swallows disposal errors.",
+                        "files": ["extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "b2", 
+                        "title": "Parallel worktree cleanup can leave git state dirty",
+                        "priority": "critical",
+                        "effort": "small",
+                        "description": "In executePool/executeParallel, worktrees are cleaned up in parallel with Promise.all(). If one worktree removal fails, it doesn't prevent others from completing, but git errors during branch deletion or worktree removal can leave stale references. The error handling in removeWorktree only warns but doesn't ensure git state consistency.",
+                        "files": ["extensions/captain/executor.ts", "extensions/captain/worktree.ts"]
+                    },
+                    {
+                        "id": "b3",
+                        "title": "Worktree path collisions across concurrent pipelines",
+                        "priority": "high", 
+                        "effort": "medium",
+                        "description": "Multiple pipelines with the same name running simultaneously can create worktree path collisions. The sanitized path only includes pipelineName-branchLabel-index, with no process ID or timestamp. This can cause 'git worktree add' failures or cleanup of active worktrees by other processes.",
+                        "files": ["extensions/captain/worktree.ts"]
+                    },
+                    {
+                        "id": "b4",
+                        "title": "Silent configuration errors in gate deserialization", 
+                        "priority": "medium",
+                        "effort": "small",
+                        "description": "Unknown gate types in deserializeGate() return undefined instead of throwing errors, causing misconfigured pipelines to silently run without gates. A typo like 'comand' instead of 'command' results in no gate validation rather than a clear error message.",
+                        "files": ["extensions/captain/deserialize.ts"]
+                    },
+                    {
+                        "id": "b5",
+                        "title": "Transform functions swallow all errors silently",
+                        "priority": "medium", 
+                        "effort": "small",
+                        "description": "The extract() and summarize() transform functions catch all exceptions and fall back to raw output. This masks legitimate errors like network failures in summarize() or JSON syntax errors in extract(), making debugging difficult.",
+                        "files": ["extensions/captain/transforms/presets.ts"]
+                    },
+                    {
+                        "id": "b6",
+                        "title": "Prefetch error masking prevents debugging",
+                        "priority": "medium",
+                        "effort": "small", 
+                        "description": "prefetchSession() has a catch-all that returns null on any error with the comment 'best-effort'. This masks real issues like model loading failures, tool resolution problems, or resource loader errors that could be fixed if visible.",
+                        "files": ["extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "b7",
+                        "title": "Potential retry logic overflow in nested failures",
+                        "priority": "low",
+                        "effort": "small",
+                        "description": "While MAX_EXECUTOR_RETRIES prevents infinite loops, the retry logic in handleFailure can create nested retry scenarios where step-level and container-level onFail handlers both trigger retries, potentially leading to more attempts than expected or confusing retry counts.",
+                        "files": ["extensions/captain/executor.ts"]
+                    }
+                ],
+                "summary": "The pi-captain codebase has several critical race conditions in session lifecycle management and git worktree operations that could lead to memory leaks and dirty repository state. Error handling is overly permissive with silent fallbacks that mask configuration errors and debugging information. The parallel execution paths need better resource cleanup coordination and collision prevention."
+            },
+            {
+                "scout": "dx",
+                "title": "Developer Experience",
+                "emoji": "✨",
+                "findings": [
+                    {
+                        "id": "dx1",
+                        "title": "Required transform field creates boilerplate",
+                        "priority": "high",
+                        "effort": "small",
+                        "description": "Every Step requires a 'transform' field even when users just want to pass output through. This forces `import { full } from \"<captain>/transforms/presets.js\"` and `transform: full` on every step. Should default to full transform to reduce boilerplate.",
+                        "files": ["extensions/captain/types.ts", "extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "dx2",
+                        "title": "Confusing <captain>/ alias import paths",
+                        "priority": "high",
+                        "effort": "medium",
+                        "description": "The `<captain>/gates/on-fail.js` import syntax is non-standard and breaks IDE autocomplete/IntelliSense. Users must know the exact paths by memory. Consider providing a standard npm-style import or better IDE integration. The string replacement mechanism in state.ts is clever but invisible to TypeScript.",
+                        "files": ["extensions/captain/state.ts", ".pi/pipelines/code-review.ts"]
+                    },
+                    {
+                        "id": "dx3",
+                        "title": "onFail field required despite gates being optional",
+                        "priority": "medium",
+                        "effort": "small",
+                        "description": "Steps require an onFail handler even when there's no gate defined. This forces users to import and specify `skip` or `warn` unnecessarily. Should default to a sensible fallback when gate is undefined.",
+                        "files": ["extensions/captain/types.ts"]
+                    },
+                    {
+                        "id": "dx4",
+                        "title": "No TypeScript setup guide for pipeline authoring",
+                        "priority": "medium",
+                        "effort": "small",
+                        "description": "README shows pipeline examples but doesn't explain how to set up TypeScript compilation, IDE autocomplete, or proper module resolution for the <captain> alias. New users likely hit immediate import errors.",
+                        "files": ["README.md"]
+                    },
+                    {
+                        "id": "dx5", 
+                        "title": "Sparse error messages for import failures",
+                        "priority": "medium",
+                        "effort": "medium",
+                        "description": "When <captain> alias resolution fails or imports are incorrect, error messages don't clearly guide users to the solution. The state.ts file has one helpful error message but more are needed throughout the import chain.",
+                        "files": ["extensions/captain/state.ts", "extensions/captain/tools/load.ts"]
+                    },
+                    {
+                        "id": "dx6",
+                        "title": "Missing comprehensive cookbook/patterns guide",
+                        "priority": "medium",
+                        "effort": "large", 
+                        "description": "While builtin presets exist, there's no systematic cookbook showing common patterns like: retry with exponential backoff, conditional branching based on output, complex gate combinations, or error recovery strategies. Advanced users have to reverse-engineer patterns from existing pipelines.",
+                        "files": ["README.md"]
+                    },
+                    {
+                        "id": "dx7",
+                        "title": "Slash command discoverability issues",
+                        "priority": "low",
+                        "effort": "medium",
+                        "description": "/captain-help exists but users must know it exists. Other commands like /captain-step aren't easily discoverable from /captain or tab completion. The help text is comprehensive but comes after the confusion.",
+                        "files": ["extensions/captain/ui/commands.ts"]
+                    },
+                    {
+                        "id": "dx8",
+                        "title": "5-minute pipeline authoring fails onboarding test", 
+                        "priority": "high",
+                        "effort": "medium",
+                        "description": "A new user cannot write a working pipeline in 5 minutes due to: required imports with unfamiliar syntax, mandatory transform/onFail fields with non-obvious defaults, and lack of quick-start template. Need a `captain_scaffold` command or simplified API for beginners.",
+                        "files": ["README.md", "extensions/captain/types.ts"]
+                    }
+                ],
+                "summary": "pi-captain has solid architecture but suffers from TypeScript authoring friction that prevents quick onboarding. The <captain> alias import system breaks IDE tooling, required boilerplate fields discourage experimentation, and sparse error messages leave users stuck. While the underlying pipeline execution is robust, the developer experience needs streamlining to achieve the '5-minute pipeline' goal. Priority fixes: default transform values, better import ergonomics, and quick-start scaffolding."
+            },
+            {
+                "scout": "performance",
+                "title": "Performance & Scalability",
+                "emoji": "⚡",
+                "findings": [
+                    {
+                        "id": "p1",
+                        "title": "String concatenation in streaming accumulator",
+                        "priority": "medium",
+                        "effort": "small",
+                        "description": "Line 406 in executor.ts uses `output += event.assistantMessageEvent.delta` for streaming accumulation, which creates new string objects on each delta. For large outputs (multi-step pipelines, research tasks), this could cause performance degradation. Replace with array accumulation and join() at the end.",
+                        "files": ["extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "p2", 
+                        "title": "Worktree creation overhead in parallel execution",
+                        "priority": "high",
+                        "effort": "medium",
+                        "description": "Each parallel/pool step creates a new git worktree via multiple shell commands (remove, branch -D, worktree add). For pipelines with many parallel branches, this becomes expensive. Consider worktree pooling/reuse or lightweight isolation alternatives like temporary directories for non-git workflows.",
+                        "files": ["extensions/captain/worktree.ts", "extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "p3",
+                        "title": "Unnecessary LLM calls in merge strategies",
+                        "priority": "medium", 
+                        "effort": "small",
+                        "description": "The 'vote' and 'rank' merge strategies always call LLM even when outputs are identical or when simple heuristics could work (e.g., if all parallel branches return the same result, skip LLM merge). Add short-circuit logic for common cases before expensive LLM merge.",
+                        "files": ["extensions/captain/merge.ts"]
+                    },
+                    {
+                        "id": "p4",
+                        "title": "Large context passing through $INPUT/Scout the pi-captain repo and generate the interactive dashboard",
+                        "priority": "medium",
+                        "effort": "medium", 
+                        "description": "Some steps pass entire previous outputs through $INPUT interpolation. Research-swarm pipeline shows concatenated findings from 5 agents (potentially 30KB+) passed to voting phase. Consider context windowing, summarization, or reference-passing for large intermediate outputs to reduce token costs.",
+                        "files": ["extensions/captain/pipelines/research-swarm.ts", "extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "p5",
+                        "title": "Cold-start optimization incomplete",
+                        "priority": "low",
+                        "effort": "large",
+                        "description": "Session prefetching only works for sequential steps. Parallel and pool branches still cold-start their sessions. The prefetch optimization could be extended to pre-warm sessions for known parallel branches while the planning step runs, reducing parallel execution latency.",
+                        "files": ["extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "p6",
+                        "title": "File I/O in preset discovery",
+                        "priority": "low",
+                        "effort": "small",
+                        "description": "discoverPresets() in state.ts scans the filesystem on every call (existsSync, readdirSync). For UI components that frequently query available pipelines, this could be cached with file watchers for invalidation.",
+                        "files": ["extensions/captain/state.ts"]
+                    }
+                ],
+                "summary": "The pi-captain codebase already implements several key performance optimizations including session prefetching, loader caching, and parallel worktree cleanup. The highest-impact remaining optimizations are reducing worktree creation overhead for parallel execution and avoiding unnecessary LLM merge calls. String accumulation and large context passing present medium-priority optimization opportunities, while cold-start and file I/O improvements would provide incremental benefits."
+            },
+            {
+                "scout": "tests",
+                "title": "Test Coverage",
+                "emoji": "🧪",
+                "findings": [
+                    {
+                        "id": "t1",
+                        "title": "State Management Zero Coverage",
+                        "priority": "high",
+                        "effort": "medium",
+                        "description": "CaptainState.ts (212 lines) handles all file I/O, pipeline discovery, serialization, and preset resolution. Critical functionality with zero test coverage. Needs tests for: pipeline loading/saving, built-in preset discovery, snapshot/restore, file system error handling, and malformed JSON recovery.",
+                        "files": ["extensions/captain/state.test.ts"]
+                    },
+                    {
+                        "id": "t2", 
+                        "title": "Git Worktree Operations Untested",
+                        "priority": "high",
+                        "effort": "medium",
+                        "description": "worktree.ts manages git isolation for parallel execution but has no tests. Risk of flaky behavior and cleanup failures. Critical edge cases: non-git repos, concurrent branch creation, cleanup on cancellation, filesystem permission errors, and branch name sanitization.",
+                        "files": ["extensions/captain/worktree.test.ts"]
+                    },
+                    {
+                        "id": "t3",
+                        "title": "Deserialization Error Handling Gap", 
+                        "priority": "high",
+                        "effort": "small",
+                        "description": "deserialize.ts converts JSON pipeline specs to executable functions but lacks tests for malformed input, unknown gate types, invalid merge strategies, and recursive structure validation. Parser errors could crash pipelines silently.",
+                        "files": ["extensions/captain/deserialize.test.ts"]
+                    },
+                    {
+                        "id": "t4",
+                        "title": "Tools Coverage Extremely Low",
+                        "priority": "medium", 
+                        "effort": "large",
+                        "description": "5 of 6 tools have zero tests: captain_define, captain_load, captain_generate, captain_status, captain_list. Only captain_run is tested. Tools handle user input validation, file operations, and pipeline management - critical user-facing functionality.",
+                        "files": ["extensions/captain/tools/define.test.ts", "extensions/captain/tools/load.test.ts", "extensions/captain/tools/generate.test.ts", "extensions/captain/tools/status.test.ts", "extensions/captain/tools/list.test.ts"]
+                    },
+                    {
+                        "id": "t5",
+                        "title": "Retry/Timing Logic Flaky Test Risk",
+                        "priority": "medium",
+                        "effort": "small", 
+                        "description": "retryWithDelay() uses setTimeout() for delay but has no timing tolerance tests. Executor MAX_EXECUTOR_RETRIES logic untested. Signal cancellation during retries untested. Risk of flaky CI failures and infinite retry scenarios without proper bounds testing.",
+                        "files": ["extensions/captain/gates/on-fail.test.ts", "extensions/captain/executor.test.ts"]
+                    }
+                ],
+                "summary": "The pi-captain test suite has good structural patterns and 139 passing tests, but critical coverage gaps exist. Only 10% of source files have tests (7 of 69), leaving core functionality like state management, git operations, and tools untested. The existing tests are well-structured with proper mocking, but timing-dependent retry logic and concurrent execution paths pose flaky test risks. Priority should be testing state management and git operations first, as these handle file I/O and could fail silently in production."
+            },
+            {
+                "scout": "refactor",
+                "title": "Refactoring Opportunities",
+                "emoji": "🔧",
+                "findings": [
+                    {
+                        "id": "r1",
+                        "title": "Split monolithic executor.ts into focused modules",
+                        "priority": "high",
+                        "effort": "large",
+                        "description": "executor.ts is 1102 lines with multiple responsibilities. Split into: session-manager.ts (session creation/warming), model-resolver.ts (model resolution logic), step-runner.ts (core step execution), and composition-executor.ts (sequential/parallel/pool logic). This would improve testability and reduce cognitive load.",
+                        "files": ["extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "r2",
+                        "title": "Extract common execution patterns for runnable types",
+                        "priority": "high",
+                        "effort": "medium",
+                        "description": "executeSequential, executePool, and executeParallel share identical patterns for gate checking, error handling, and transform application. Create an abstract RunnableExecutor base class or shared execution helpers to eliminate ~100 lines of duplication.",
+                        "files": ["extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "r3",
+                        "title": "Simplify complex conditional chains in executeRunnable",
+                        "priority": "medium",
+                        "effort": "small",
+                        "description": "Replace the switch statement with a strategy pattern or execution map. This eliminates the need for type casting and makes adding new runnable types cleaner.",
+                        "files": ["extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "r4",
+                        "title": "Extract constants and configuration",
+                        "priority": "medium",
+                        "effort": "small",
+                        "description": "Magic numbers like MAX_EXECUTOR_RETRIES (10), default tool arrays ['read', 'bash', 'edit', 'write'], and model scoring weights are scattered throughout. Create a constants.ts file and a config object pattern.",
+                        "files": ["extensions/captain/executor.ts", "extensions/captain/deserialize.ts"]
+                    },
+                    {
+                        "id": "r5",
+                        "title": "Improve type safety in tool resolution",
+                        "priority": "medium",
+                        "effort": "small",
+                        "description": "The resolveTools function uses `AnyAgentTool` which bypasses type checking. Create a proper union type for known tools and a separate handler for extension tools to maintain type safety.",
+                        "files": ["extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "r6",
+                        "title": "Consolidate gate/onFail deserialization patterns",
+                        "priority": "low",
+                        "effort": "medium",
+                        "description": "deserializeStep, deserializeSequential, deserializePool, and deserializeParallel have nearly identical gate/onFail/transform handling. Create a shared deserializeCommonFields helper to reduce duplication and ensure consistency.",
+                        "files": ["extensions/captain/deserialize.ts"]
+                    },
+                    {
+                        "id": "r7",
+                        "title": "Simplify model scoring logic",
+                        "priority": "low",
+                        "effort": "small",
+                        "description": "The modelScore function uses magic numbers (0,1,2,3) and complex regex patterns. Replace with an enum-based scoring system and extract the scoring rules to a configuration object for better maintainability.",
+                        "files": ["extensions/captain/executor.ts"]
+                    },
+                    {
+                        "id": "r8",
+                        "title": "Extract session lifecycle management",
+                        "priority": "medium",
+                        "effort": "medium",
+                        "description": "Session creation, warming, disposal, and tool activation are spread throughout runStepCore. Create a SessionManager class that encapsulates this lifecycle and provides clean async disposal patterns.",
+                        "files": ["extensions/captain/executor.ts"]
+                    }
+                ],
+                "summary": "The codebase shows good architectural patterns but suffers from a monolithic executor.ts file (1102 lines) that handles too many responsibilities. The main issues are code duplication across runnable execution paths, scattered constants, and complex conditional logic. Splitting the executor into focused modules and extracting common patterns would significantly improve maintainability while preserving the solid type system and functional approach. The deserialize.ts and utility files are well-structured and need only minor improvements."
+            }
+        ];
+
+        let backlog = JSON.parse(localStorage.getItem('captain-backlog') || '[]');
+        let currentTab = 'features';
+        let filters = {
+            priority: 'all',
+            effort: 'all'
+        };
+
+        function init() {
+            renderSummaryBar();
+            renderTabs();
+            renderTabContents();
+            renderBacklog();
+            setupDragAndDrop();
+            showTab('features');
+        }
+
+        function renderSummaryBar() {
+            const totalFindings = scouts.reduce((sum, scout) => sum + scout.findings.length, 0);
+            const criticalCount = scouts.reduce((sum, scout) => sum + scout.findings.filter(f => f.priority === 'critical').length, 0);
+            const highCount = scouts.reduce((sum, scout) => sum + scout.findings.filter(f => f.priority === 'high').length, 0);
+            const mediumCount = scouts.reduce((sum, scout) => sum + scout.findings.filter(f => f.priority === 'medium').length, 0);
+            const lowCount = scouts.reduce((sum, scout) => sum + scout.findings.filter(f => f.priority === 'low').length, 0);
+
+            document.getElementById('summaryBar').innerHTML = `
+                <div class="summary-stat">
+                    <div class="number">${totalFindings}</div>
+                    <div class="label">Total Findings</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="number priority-high">${criticalCount}</div>
+                    <div class="label">Critical</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="number priority-high">${highCount}</div>
+                    <div class="label">High Priority</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="number priority-medium">${mediumCount}</div>
+                    <div class="label">Medium Priority</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="number priority-low">${lowCount}</div>
+                    <div class="label">Low Priority</div>
+                </div>
+            `;
+        }
+
+        function renderTabs() {
+            const tabsHTML = scouts.map(scout => 
+                `<button class="tab" onclick="showTab('${scout.scout}')" data-tab="${scout.scout}">
+                    ${scout.emoji} ${scout.title}
+                </button>`
+            ).join('');
+            document.getElementById('tabs').innerHTML = tabsHTML;
+        }
+
+        function renderTabContents() {
+            const contentsHTML = scouts.map(scout => {
+                const filteredFindings = filterFindings(scout.findings);
+                return `
+                    <div class="tab-content" id="tab-${scout.scout}">
+                        <div class="controls">
+                            <div class="filter-group">
+                                <label>Priority:</label>
+                                <select id="priority-filter-${scout.scout}" onchange="updateFilters('${scout.scout}')">
+                                    <option value="all">All</option>
+                                    <option value="critical">Critical</option>
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Effort:</label>
+                                <select id="effort-filter-${scout.scout}" onchange="updateFilters('${scout.scout}')">
+                                    <option value="all">All</option>
+                                    <option value="small">Small</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="large">Large</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="scout-summary">
+                            <strong>${scout.title}</strong>: ${scout.summary}
+                        </div>
+                        
+                        <div class="findings-grid" id="findings-${scout.scout}">
+                            ${renderFindings(scout.findings, scout.scout)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('tabContents').innerHTML = contentsHTML;
+        }
+
+        function renderFindings(findings, scoutName) {
+            return findings.map(finding => {
+                const isSelected = backlog.some(item => item.id === finding.id);
+                return `
+                    <div class="finding-card ${isSelected ? 'selected' : ''}" 
+                         draggable="true" 
+                         data-id="${finding.id}"
+                         data-scout="${scoutName}"
+                         onclick="toggleBacklog('${finding.id}', '${scoutName}')">
+                        <div class="card-header">
+                            <span class="card-emoji">${scouts.find(s => s.scout === scoutName).emoji}</span>
+                            <div class="card-title">${finding.title}</div>
+                        </div>
+                        <div class="card-badges">
+                            <span class="badge priority-${finding.priority}">${finding.priority.toUpperCase()}</span>
+                            <span class="badge effort-${finding.effort}">${finding.effort.toUpperCase()}</span>
+                        </div>
+                        <div class="card-description">${finding.description}</div>
+                        <div class="file-chips">
+                            ${finding.files.map(file => `<span class="file-chip">${file}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterFindings(findings) {
+            return findings.filter(finding => {
+                if (filters.priority !== 'all' && finding.priority !== filters.priority) return false;
+                if (filters.effort !== 'all' && finding.effort !== filters.effort) return false;
+                return true;
+            });
+        }
+
+        function updateFilters(scoutName) {
+            const priorityFilter = document.getElementById(`priority-filter-${scoutName}`).value;
+            const effortFilter = document.getElementById(`effort-filter-${scoutName}`).value;
+            
+            const scout = scouts.find(s => s.scout === scoutName);
+            const filteredFindings = scout.findings.filter(finding => {
+                if (priorityFilter !== 'all' && finding.priority !== priorityFilter) return false;
+                if (effortFilter !== 'all' && finding.effort !== effortFilter) return false;
+                return true;
+            });
+
+            document.getElementById(`findings-${scoutName}`).innerHTML = renderFindings(filteredFindings, scoutName);
+        }
+
+        function showTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === tabName);
+            });
+
+            // Update tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === `tab-${tabName}`);
+            });
+
+            currentTab = tabName;
+        }
+
+        function toggleBacklog(findingId, scoutName) {
+            const finding = scouts.find(s => s.scout === scoutName).findings.find(f => f.id === findingId);
+            const existingIndex = backlog.findIndex(item => item.id === findingId);
+
+            if (existingIndex >= 0) {
+                backlog.splice(existingIndex, 1);
+            } else {
+                backlog.push({
+                    ...finding,
+                    scout: scoutName,
+                    scoutTitle: scouts.find(s => s.scout === scoutName).title,
+                    emoji: scouts.find(s => s.scout === scoutName).emoji
+                });
+            }
+
+            saveBacklog();
+            renderBacklog();
+            // Re-render current tab to update selection state
+            renderTabContents();
+            showTab(currentTab);
+        }
+
+        function renderBacklog() {
+            const count = backlog.length;
+            document.getElementById('backlogCount').textContent = count;
+
+            if (count === 0) {
+                document.getElementById('backlogItems').innerHTML = 
+                    '<p style="color: #9ca3af;">Drag findings here to add them to your backlog</p>';
+                return;
+            }
+
+            const itemsHTML = backlog.map(item => `
+                <div class="backlog-item">
+                    <div class="info">
+                        <span>${item.emoji}</span>
+                        <span><strong>${item.title}</strong></span>
+                        <span class="badge priority-${item.priority}">${item.priority}</span>
+                        <span class="badge effort-${item.effort}">${item.effort}</span>
+                    </div>
+                    <button class="remove-button" onclick="removeFromBacklog('${item.id}')">Remove</button>
+                </div>
+            `).join('');
+
+            document.getElementById('backlogItems').innerHTML = itemsHTML;
+        }
+
+        function removeFromBacklog(findingId) {
+            backlog = backlog.filter(item => item.id !== findingId);
+            saveBacklog();
+            renderBacklog();
+            renderTabContents();
+            showTab(currentTab);
+        }
+
+        function saveBacklog() {
+            localStorage.setItem('captain-backlog', JSON.stringify(backlog));
+        }
+
+        function copyBacklogToClipboard() {
+            if (backlog.length === 0) {
+                alert('No items in backlog to copy');
+                return;
+            }
+
+            const markdown = backlog.map(item => 
+                `- [ ] **${item.title}** (${item.priority} priority, ${item.effort} effort)\n  ${item.description}`
+            ).join('\n\n');
+
+            navigator.clipboard.writeText(markdown).then(() => {
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#10b981';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#7c3aed';
+                }, 2000);
+            });
+        }
+
+        function setupDragAndDrop() {
+            document.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('finding-card')) {
+                    e.target.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                        id: e.target.dataset.id,
+                        scout: e.target.dataset.scout
+                    }));
+                }
+            });
+
+            document.addEventListener('dragend', (e) => {
+                e.target.classList.remove('dragging');
+            });
+
+            const dropZone = document.getElementById('dropZone');
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                
+                try {
+                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    if (data.id && data.scout) {
+                        toggleBacklog(data.id, data.scout);
+                    }
+                } catch (err) {
+                    console.error('Failed to parse drop data:', err);
+                }
+            });
+        }
+
+        // Initialize the dashboard
+        init();
+    </script>
+</body>
+</html>

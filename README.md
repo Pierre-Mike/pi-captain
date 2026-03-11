@@ -18,22 +18,24 @@ pi install git:github.com/Pierre-Mike/pi-captain
 
 | Tool | Description |
 |------|-------------|
-| `captain_define` | Wire steps into a pipeline (sequential / parallel / pool) |
-| `captain_run` | Execute a pipeline with input |
-| `captain_status` | Check pipeline progress and results |
-| `captain_list` | List all defined pipelines |
 | `captain_load` | Load a builtin pipeline preset or `.ts` pipeline file |
-| `captain_generate` | Auto-generate a pipeline from a goal description |
+| `captain_run` | Execute a pipeline with input |
+| `captain_status` | Check pipeline progress, tokens, cost, and gate results |
+| `captain_list` | List all defined pipelines |
+| `captain_metrics` | Query per-step telemetry: tokens, cost, latency across all runs |
 
 ### Builtin Pipeline Presets
 
 | Preset | Description |
 |--------|-------------|
-| `captain:shredder` | Clarify → decompose → shred to atomic units → validate → resolve deps → generate pipeline spec → Obsidian canvas |
-| `captain:spec-tdd` | Spec → TDD red → TDD green + docs (parallel) → review → PR |
-| `captain:requirements-gathering` | Explore → deep-dive → challenge → synthesize REQUIREMENTS.md |
-| `captain:github-pr-review` | Fetch PR metadata → review each file → synthesize verdict |
-| `captain:showcase` | Demonstrates gates, retries, closures, and transforms |
+| `githubPrReview` | GitHub PR review pipeline |
+| `reqDecompose` | Requirements decomposition |
+| `reqDecomposeAi` | AI-powered requirements decomposition |
+| `requirementsGathering` | Requirements gathering workflow |
+| `researchSwarm` | Research swarm coordination |
+| `showcase` | Self-contained demo exercising all features |
+| `shredder` | Document shredding/analysis |
+| `specTdd` | Specification-driven TDD |
 
 ---
 
@@ -95,6 +97,13 @@ Load and run:
 captain_load: action="load", name="./my-pipeline.ts"
 captain_run: name="my-pipeline", input="Build a REST API for user management"
 ```
+
+> **`.pi/pipelines/` convention:** User pipeline files placed in `.pi/pipelines/` should start with two header comments so the name and description are discoverable without importing the module (this is required for `captain_generate` output):
+> ```ts
+> // @name: my-pipeline-name
+> // @description: One-line description of what this pipeline does
+> ```
+> These files are auto-discovered by `captain_load` (action: "list") and `/captain-load`.
 
 ---
 
@@ -207,39 +216,12 @@ gate: ({ output }) => {
 
 | Export | Description |
 |--------|-------------|
-| `bunTest` | `bun test` exits 0 |
-| `bunTypecheck` | `bunx tsc --noEmit` exits 0 |
-| `bunLint` | `bun run lint` exits 0 |
-| `command(cmd)` | Any shell command, exit 0 = pass |
-| `commandAll(...cmds)` | All shell commands must pass (joined with `&&`) |
+| `command(cmd)` | Run shell command - exit 0 passes, non-zero fails |
 | `file(path)` | File must exist |
-| `dir(path)` | Directory must exist |
-| `regex(pattern, flags?)` | Output must match regex |
-| `regexCI(pattern)` | Case-insensitive regex match |
-| `regexExcludes(pattern)` | Output must NOT match regex |
-| `outputIncludes(s)` | Output contains string (case-sensitive) |
-| `outputIncludesCI(s)` | Output contains string (case-insensitive) |
-| `outputMinLength(n)` | Output at least N characters |
-| `jsonValid` | Output is valid JSON |
-| `jsonHasKeys(...keys)` | Valid JSON with required top-level keys |
-| `httpOk(url)` | GET returns 200 |
-| `httpStatus(url, status, method?)` | Specific HTTP status |
-| `portListening(port, host?)` | TCP port is open |
-| `dockerRunning(name)` | Docker container is running |
-| `envSet(name)` | Env var is set and non-empty |
-| `envEquals(name, value)` | Env var equals a specific value |
-| `gitClean` | Working directory has no uncommitted changes |
-| `gitBranch(name)` | Current branch matches name |
-| `noConflicts` | No merge conflict markers in source files |
-| `allOf(...gates)` | All sub-gates must pass (AND) |
-| `anyOf(...gates)` | At least one must pass (OR) |
-| `withTimeout(gate, ms)` | Fail if gate takes longer than ms |
-| `user` | Human approval via UI confirm dialog |
-| `none` | Always passes |
-| `testAndTypecheck` | `bun test && bunx tsc --noEmit` |
-| `fullCI` | test + typecheck + lint |
-| `prodReady` | tests + typecheck + build artifact |
-| `distExists` | `dist/index.js` exists |
+| `regexCI(pattern)` | Output must match regex (case-insensitive) |
+| `allOf(...gates)` | All gates must pass |
+| `user` | Require human confirmation via interactive UI |
+| `bunTest` | Preset: run `bun test` |
 
 **LLM gate** (import from `gates/llm.js`):
 
@@ -282,9 +264,9 @@ type OnFailResult =
 |--------|-------------|
 | `retry(max?)` | Re-run up to N times (default 3), then fail |
 | `retryWithDelay(max, delayMs)` | Retry with pause between attempts |
-| `skip` | Mark as skipped, pass empty string downstream |
-| `warn` | Log warning, treat as passed |
 | `fallback(step)` | Run an alternative step instead |
+| `skip` | Skip scope - mark as skipped, continue with empty output |
+| `warn` | Log warning but treat as passed and continue |
 
 **Custom inline:**
 ```ts
@@ -408,7 +390,7 @@ merge: (outputs) => outputs.join("\n---\n")
 ```ts
 // research-and-build.ts
 import { retry, skip, warn } from "<captain>/gates/on-fail.js";
-import { bunTest, allOf, outputMinLength, user } from "<captain>/gates/presets.js";
+import { bunTest, allOf, file, user } from "<captain>/gates/presets.js";
 import { llmFast } from "<captain>/gates/llm.js";
 import { concat } from "<captain>/merge.js";
 import { full, summarize } from "<captain>/transforms/presets.js";
@@ -423,7 +405,6 @@ export const pipeline: Runnable = {
       model: "flash",
       tools: ["read", "bash"],
       prompt: "Explore the codebase and understand how to implement: $ORIGINAL. Identify relevant files, patterns, and constraints.",
-      gate: outputMinLength(100),
       onFail: skip,
       transform: full,
     },
@@ -493,9 +474,6 @@ export const pipeline: Runnable = {
 # Load a custom TypeScript pipeline
 > captain_load: name="./my-pipeline.ts"
 > captain_run: name="my-pipeline", input="refactor the auth module"
-
-# Generate a custom pipeline on the fly
-> captain_generate: goal="research and document best practices for auth"
 
 # Single-step ad-hoc via /captain-step
 > /captain-step "analyze this codebase" --model flash --tools read,bash

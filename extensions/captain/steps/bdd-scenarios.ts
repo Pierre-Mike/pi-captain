@@ -52,6 +52,7 @@ export const bddScenarios: Step = {
 	description:
 		"Distill user stories into Given/When/Then acceptance scenarios (ATDD outer loop)",
 	prompt,
+	gate: () => true,
 	onFail: retry(),
 	transform: full,
 };

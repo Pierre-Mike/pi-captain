@@ -1,5 +1,8 @@
 import type { TextContent } from "@mariozechner/pi-ai";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type {
+	DefaultResourceLoader,
+	ExtensionAPI,
+} from "@mariozechner/pi-coding-agent";
 import * as piSdk from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
@@ -11,11 +14,10 @@ import {
 	buildPipelineSelectOptions,
 	parsePipelineSelectOption,
 } from "../ui/select.js";
-import { statusIcon } from "../utils/index.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function buildCompletionSummary(
+function buildCompletionText(
 	name: string,
 	output: string,
 	results: StepResult[],
@@ -33,7 +35,6 @@ function buildCompletionSummary(
 	return [
 		`Pipeline "${name}" completed in ${elapsed}s`,
 		`Steps: ${results.length} (${passed} passed, ${failed} failed, ${skipped} skipped)`,
-		"",
 		"── Output ──",
 		truncated,
 	].join("\n");
@@ -148,48 +149,36 @@ async function resolveNameInteractively(
 type ExecCtx = Parameters<
 	Parameters<ExtensionAPI["registerTool"]>[0]["execute"]
 >[4];
-type OnUpdate = Parameters<
-	Parameters<ExtensionAPI["registerTool"]>[0]["execute"]
->[3];
-
 /** Build the three step-lifecycle hooks that drive widget and stream updates. */
 function makeStepHooks(
 	pipelineState: PipelineState,
-	resolvedName: string,
 	ctx: ExecCtx,
 	updateWidget: (ctx: ExecCtx, s: PipelineState) => void,
-	onUpdate: OnUpdate,
-): Pick<ExecutorContext, "onStepStart" | "onStepStream" | "onStepEnd"> {
+): Pick<
+	ExecutorContext,
+	"onStepStart" | "onStepStream" | "onStepEnd" | "onStepToolCall"
+> {
 	return {
 		onStepStart: (label) => {
 			pipelineState.currentSteps.add(label);
 			pipelineState.currentStepStreams.delete(label);
+			pipelineState.currentStepToolCalls.delete(label);
 			updateWidget(ctx, pipelineState);
-			onUpdate?.({
-				content: [{ type: "text", text: `⏳ Running step: ${label}...` }],
-				details: undefined,
-			});
-			const running = [...pipelineState.currentSteps].join(", ");
-			ctx.ui.setStatus("captain", `🚀 ${resolvedName} → ${running}`);
 		},
 		onStepStream: (label, text) => {
 			pipelineState.currentStepStreams.set(label, text);
 			updateWidget(ctx, pipelineState);
 		},
+		onStepToolCall: (label, totalCalls) => {
+			pipelineState.currentStepToolCalls.set(label, totalCalls);
+			updateWidget(ctx, pipelineState);
+		},
 		onStepEnd: (result: StepResult) => {
 			pipelineState.currentSteps.delete(result.label);
 			pipelineState.currentStepStreams.delete(result.label);
+			pipelineState.currentStepToolCalls.delete(result.label);
 			pipelineState.results.push(result);
 			updateWidget(ctx, pipelineState);
-			onUpdate?.({
-				content: [
-					{
-						type: "text",
-						text: `${statusIcon(result.status)} ${result.label}: ${result.status} (${(result.elapsed / 1000).toFixed(1)}s)`,
-					},
-				],
-				details: undefined,
-			});
 		},
 	};
 }
@@ -204,7 +193,6 @@ function buildEctx(
 	signal: AbortSignal | undefined,
 	ctx: ExecCtx,
 	updateWidget: (ctx: ExecCtx, s: PipelineState) => void,
-	onUpdate: OnUpdate,
 ): ExecutorContext {
 	return {
 		exec: (cmd, args, opts) => pi.exec(cmd, args, opts),
@@ -218,7 +206,9 @@ function buildEctx(
 		confirm: ctx.hasUI ? (t, b) => ctx.ui.confirm(t, b) : undefined,
 		signal: signal ?? undefined,
 		pipelineName: resolvedName,
-		...makeStepHooks(pipelineState, resolvedName, ctx, updateWidget, onUpdate),
+		// Fix 1: shared loader cache — reused across all steps in this pipeline run.
+		loaderCache: new Map<string, DefaultResourceLoader>(),
+		...makeStepHooks(pipelineState, ctx, updateWidget),
 	};
 }
 
@@ -228,7 +218,6 @@ async function runPipeline(
 	resolvedName: string,
 	resolvedInput: string | undefined,
 	signal: AbortSignal | undefined,
-	onUpdate: OnUpdate,
 	ctx: ExecCtx,
 	updateWidget: (ctx: ExecCtx, s: PipelineState) => void,
 	clearWidget: (ctx: ExecCtx) => void,
@@ -256,6 +245,7 @@ async function runPipeline(
 		results: [],
 		currentSteps: new Set(),
 		currentStepStreams: new Map(),
+		currentStepToolCalls: new Map(),
 		startTime: Date.now(),
 	};
 	state.runningState = pipelineState;
@@ -291,7 +281,6 @@ async function runPipeline(
 		signal,
 		ctx,
 		updateWidget,
-		onUpdate,
 	);
 
 	try {
@@ -305,13 +294,12 @@ async function runPipeline(
 		pipelineState.finalOutput = output;
 		pipelineState.endTime = Date.now();
 		pipelineState.results = results;
-		ctx.ui.setStatus("captain", undefined);
 		clearWidget(ctx);
 		return {
 			content: [
 				{
 					type: "text" as const,
-					text: buildCompletionSummary(
+					text: buildCompletionText(
 						resolvedName,
 						output,
 						results,
@@ -325,7 +313,6 @@ async function runPipeline(
 	} catch (err) {
 		pipelineState.status = "failed";
 		pipelineState.endTime = Date.now();
-		ctx.ui.setStatus("captain", undefined);
 		clearWidget(ctx);
 		const errMsg = err instanceof Error ? err.message : String(err);
 		return {
@@ -361,7 +348,7 @@ export function registerRunTool(
 			),
 		}),
 
-		async execute(_id, params, signal, onUpdate, ctx) {
+		async execute(_id, params, signal, _onUpdate, ctx) {
 			const resolvedInput: string | undefined = params.input;
 			const resolvedName: string = params.name || "";
 
@@ -381,7 +368,6 @@ export function registerRunTool(
 				resolvedName,
 				resolvedInput,
 				signal,
-				onUpdate,
 				ctx,
 				updateWidget,
 				clearWidget,
@@ -414,11 +400,11 @@ export function registerRunTool(
 		renderResult: (result, { isPartial }, theme) => {
 			if (isPartial)
 				return new Text(theme.fg("accent", "● Running pipeline..."), 0, 0);
-			if (
-				result.content[0] &&
-				"text" in result.content[0] &&
-				result.content[0].text.startsWith("Error")
-			)
+			const text =
+				result.content[0] && "text" in result.content[0]
+					? result.content[0].text
+					: "";
+			if (text.startsWith("Pipeline") && text.includes("failed:"))
 				return new Text(theme.fg("error", "✗ Pipeline failed"), 0, 0);
 			return new Text(theme.fg("success", "✓ Done"), 0, 0);
 		},
