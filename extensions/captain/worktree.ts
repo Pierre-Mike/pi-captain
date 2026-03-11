@@ -44,10 +44,11 @@ export async function createWorktree(
 		isGitRepoHint !== undefined ? isGitRepoHint : await isGitRepo(exec, cwd);
 	if (!gitRepo) return null;
 
-	const sanitized = `${pipelineName}-${branchLabel}-${index}`.replace(
-		/[^a-zA-Z0-9_-]/g,
-		"_",
-	);
+	const sanitized =
+		`${pipelineName}-${branchLabel}-${index}-${process.pid}`.replace(
+			/[^a-zA-Z0-9_-]/g,
+			"_",
+		);
 	const worktreePath = path.join(cwd, ".worktrees", sanitized);
 	const branchName = `captain/${sanitized}`;
 
@@ -105,6 +106,8 @@ export async function removeWorktree(
 			);
 		}
 	}
+
+	// Always attempt to delete branch, even if worktree removal failed
 	try {
 		await exec("git", ["-C", cwd, "branch", "-D", branchName], { signal });
 	} catch (err) {
@@ -115,5 +118,27 @@ export async function removeWorktree(
 				`[captain] branch delete failed for "${branchName}": ${msg}`,
 			);
 		}
+	}
+}
+
+/** Sequential cleanup with final prune to ensure git state stays clean */
+export async function removeWorktreesSequential(
+	exec: ExecFn,
+	cwd: string,
+	worktrees: { path: string; branch: string }[],
+	signal?: AbortSignal,
+): Promise<void> {
+	// Remove worktrees sequentially to avoid git state corruption
+	for (const wt of worktrees) {
+		await removeWorktree(exec, cwd, wt.path, wt.branch, signal);
+	}
+
+	// Final cleanup to remove any stale worktree references
+	try {
+		await exec("git", ["-C", cwd, "worktree", "prune"], { signal });
+	} catch (err) {
+		// Prune failure is not critical, just log it
+		const msg = err instanceof Error ? err.message : String(err);
+		console.warn(`[captain] git worktree prune failed: ${msg}`);
 	}
 }

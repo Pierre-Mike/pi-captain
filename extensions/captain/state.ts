@@ -89,18 +89,28 @@ export class CaptainState {
 		spec: Runnable;
 		source: string;
 	}> {
-		// Resolve <captain>/ alias: replace all occurrences with the absolute
+		// Resolve <captain>/ and captain/ aliases: replace all occurrences with the absolute
 		// path to the captain extension directory so that external pipeline
-		// files (e.g. in .pi/pipelines/) can use the documented alias without
+		// files (e.g. in .pi/pipelines/) can use the documented aliases without
 		// needing to know the install location.
 		const raw = readFileSync(filePath, "utf-8");
-		const captainAlias = `"<captain>/`;
-		const needsAlias = raw.includes(captainAlias);
+		const captainAliasBrackets = `"<captain>/`;
+		const captainAliasNoBrackets = `"captain/`;
+		const needsAlias =
+			raw.includes(captainAliasBrackets) ||
+			raw.includes(captainAliasNoBrackets);
 
 		let importPath = filePath;
 
 		if (needsAlias) {
-			const resolved = raw.replaceAll(captainAlias, `"${this.captainDir}/`);
+			let resolved = raw.replaceAll(
+				captainAliasBrackets,
+				`"${this.captainDir}/`,
+			);
+			resolved = resolved.replaceAll(
+				captainAliasNoBrackets,
+				`"${this.captainDir}/`,
+			);
 			// Write a temp file so Bun can import it with correct paths
 			const tmpFile = join(tmpdir(), `captain-pipeline-${Date.now()}.ts`);
 			writeFileSync(tmpFile, resolved, "utf-8");
@@ -129,7 +139,7 @@ export class CaptainState {
 			throw new Error(
 				`Invalid TypeScript pipeline file: "${filePath}" must export a "pipeline" const of type Runnable.\n` +
 					`Tip: ensure your file exports a "pipeline" const with a "kind" field (e.g. "sequential", "parallel", "pool").\n` +
-					`If you used "<captain>/" imports, make sure the alias is written exactly as: "<captain>/gates/on-fail.js"`,
+					`If you used captain aliases, use either "<captain>/" or "captain/" (e.g. "<captain>/gates/on-fail.js" or "captain/gates/on-fail.js")`,
 			);
 		}
 		const ext = filePath.endsWith(".ts") ? ".ts" : ".js";

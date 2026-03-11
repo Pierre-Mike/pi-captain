@@ -98,6 +98,43 @@ captain_load: action="load", name="./my-pipeline.ts"
 captain_run: name="my-pipeline", input="Build a REST API for user management"
 ```
 
+## Import Aliases and Barrel Exports
+
+Captain supports two convenient ways to import presets and types for better IDE support:
+
+### Path Aliases
+
+Use either alias syntax to reference captain extension files:
+
+```ts
+// Standard alias with angle brackets (original syntax)
+import { retry } from "<captain>/gates/on-fail.js";
+
+// Convenience alias without angle brackets (new syntax)
+import { retry } from "captain/gates/on-fail.js";
+```
+
+Both aliases resolve to the same absolute path of the captain extension directory.
+
+### Barrel Imports
+
+Import multiple presets from a single file for better autocomplete and fewer import lines:
+
+```ts
+// Import all commonly used presets from one barrel file
+import { 
+  bunTest, retry, full, concat, 
+  Runnable, Step, Gate, OnFail 
+} from "/Users/pierre-mikel/Github/pi-captain/extensions/captain/index.js";
+```
+
+The barrel export includes:
+- **Gate presets**: `command`, `file`, `regexCI`, `allOf`, `user`, `bunTest`
+- **OnFail presets**: `retry`, `retryWithDelay`, `fallback`, `skip`, `warn`
+- **Transform presets**: `full`, `extract`, `summarize`
+- **Merge presets**: `concat`, `awaitAll`, `firstPass`, `vote`, `rank`
+- **Core types**: `Runnable`, `Step`, `Sequential`, `Pool`, `Parallel`, `Gate`, `OnFail`, `Transform`, `MergeFn`, `ModelId`
+
 ## Step Fields
 
 | Field | Type | Default | Description |
@@ -208,7 +245,7 @@ export const pipeline: Runnable = {
 ### Parallel — different steps concurrently (each in own git worktree)
 
 ```ts
-import { concat } from "<captain>/merge.js";
+import { concat } from "captain/merge.js"; // using convenience alias
 
 export const pipeline: Runnable = {
   kind: "parallel",
@@ -220,7 +257,7 @@ export const pipeline: Runnable = {
 ### Pool — same step × N (each in own git worktree)
 
 ```ts
-import { vote } from "<captain>/merge.js";
+import { vote } from "<captain>/merge.js"; // using standard alias
 
 export const pipeline: Runnable = {
   kind: "pool",
@@ -236,7 +273,11 @@ export const pipeline: Runnable = {
 Import named presets from `merge.js`:
 
 ```ts
+// Using standard alias
 import { concat, awaitAll, firstPass, vote, rank } from "<captain>/merge.js";
+
+// Using convenience alias  
+import { concat, awaitAll, firstPass, vote, rank } from "captain/merge.js";
 ```
 
 | Preset | Behavior |

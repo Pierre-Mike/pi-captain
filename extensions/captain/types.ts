@@ -183,7 +183,7 @@ export interface Step {
 
 	gate?: Gate;
 	onFail?: OnFail;
-	transform: Transform;
+	transform?: Transform;
 }
 
 /** Sequential — run in order, output chains via $INPUT */

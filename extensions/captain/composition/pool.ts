@@ -1,0 +1,123 @@
+// ── Pool Pipeline Execution ───────────────────────────────────────────────
+// Run the same step N times in parallel branches (git worktrees)
+
+import type { MergeCtx } from "../merge.js";
+import type { ExecutorContext } from "../steps/runner.js";
+import type { Pool, Runnable, StepResult } from "../types.js";
+import { applyTransform, runContainerGate } from "../utils/execution.js";
+import { createWorktree, isGitRepo, removeWorktree } from "../worktree.js";
+
+function getLabel(r: Runnable): string {
+	switch (r.kind) {
+		case "step":
+			return r.label;
+		case "sequential":
+			return `seq-${r.steps[0] ? getLabel(r.steps[0]) : "empty"}`;
+		case "pool":
+			return `pool-${getLabel(r.step)}`;
+		case "parallel":
+			return "par";
+		default:
+			return "unknown";
+	}
+}
+
+/**
+ * Execute a pool pipeline with git worktree isolation.
+ * Runs the same step N times in parallel, each in its own git worktree.
+ */
+export async function executePool(
+	pool: Pool,
+	input: string,
+	original: string,
+	ectx: ExecutorContext,
+	executeRunnable: (
+		runnable: Runnable,
+		input: string,
+		original: string,
+		ectx: ExecutorContext,
+	) => Promise<{ output: string; results: StepResult[] }>,
+): Promise<{ output: string; results: StepResult[] }> {
+	const worktrees: { path: string; branch: string }[] = [];
+	const allResults: StepResult[] = [];
+
+	try {
+		// Resolve git-repo status once for this cwd, reuse for all branches.
+		const gitRepo = ectx.isGitRepo ?? (await isGitRepo(ectx.exec, ectx.cwd));
+
+		const poolGroup = `pool ×${pool.count}: ${getLabel(pool.step) || "step"}`;
+		const promises = Array.from({ length: pool.count }, async (_, i) => {
+			const label = getLabel(pool.step) || `pool-${i}`;
+			const wt = await createWorktree(
+				ectx.exec,
+				ectx.cwd,
+				ectx.pipelineName,
+				label,
+				i,
+				ectx.signal,
+				gitRepo,
+			);
+			if (wt) worktrees.push({ path: wt.worktreePath, branch: wt.branchName });
+			const branchCtx: ExecutorContext = {
+				...ectx,
+				cwd: wt?.worktreePath ?? ectx.cwd,
+				stepGroup: poolGroup,
+			};
+			// Tag each pool instance with its index so they get unique labels in
+			// currentSteps/results — without this all N instances share one label
+			// and the Set collapses them into a single entry.
+			const taggedStep =
+				pool.count > 1 && pool.step.kind === "step"
+					? { ...pool.step, label: `${pool.step.label} [${i + 1}]` }
+					: pool.step;
+			return executeRunnable(
+				taggedStep,
+				`${input}\n[Branch ${i + 1} of ${pool.count}]`,
+				original,
+				branchCtx,
+			);
+		});
+
+		const settled = await Promise.allSettled(promises);
+		const outputs: string[] = [];
+		for (const r of settled) {
+			if (r.status === "fulfilled") {
+				outputs.push(r.value.output);
+				allResults.push(...r.value.results);
+			} else outputs.push(`(error: ${r.reason})`);
+		}
+
+		const mctx: MergeCtx = {
+			model: ectx.model,
+			apiKey: ectx.apiKey,
+			signal: ectx.signal,
+		};
+		const merged = await pool.merge(outputs, mctx);
+		const checked = await runContainerGate(
+			merged,
+			allResults,
+			pool.gate,
+			pool.onFail,
+			`pool ×${pool.count}`,
+			() => executePool(pool, input, original, ectx, executeRunnable),
+			ectx,
+			0,
+		);
+		if (pool.transform) {
+			checked.output = await applyTransform(
+				pool.transform,
+				checked.output,
+				ectx,
+				original,
+			);
+		}
+		return checked;
+	} finally {
+		// Remove all worktrees in parallel instead of sequentially.
+		await Promise.all(
+			worktrees.map((wt) =>
+				removeWorktree(ectx.exec, ectx.cwd, wt.path, wt.branch, ectx.signal),
+			),
+		);
+	}
+}
