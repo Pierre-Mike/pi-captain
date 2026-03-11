@@ -14,6 +14,7 @@ import {
 	buildPipelineSelectOptions,
 	parsePipelineSelectOption,
 } from "../ui/select.js";
+import { text } from "./helpers.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -58,7 +59,7 @@ function cancelled(): GuardResult {
 	return {
 		done: true,
 		result: {
-			content: [{ type: "text" as const, text: "(cancelled)" }],
+			content: [text("(cancelled)")],
 			details: undefined,
 		},
 	};
@@ -67,7 +68,7 @@ function guardError(msg: string): GuardResult {
 	return {
 		done: true,
 		result: {
-			content: [{ type: "text" as const, text: msg }],
+			content: [text(msg)],
 			details: undefined,
 		},
 	};
@@ -85,10 +86,9 @@ async function selectAndAutoLoad(
 			done: true,
 			result: {
 				content: [
-					{
-						type: "text" as const,
-						text: "No pipelines available. Use captain_define or captain_load first.",
-					},
+					text(
+						"No pipelines available. Use captain_define or captain_load first.",
+					),
 				],
 				details: undefined,
 			},
@@ -229,10 +229,9 @@ async function runPipeline(
 	if (!pipeline) {
 		return {
 			content: [
-				{
-					type: "text" as const,
-					text: `Error: pipeline "${resolvedName}" not found. Define it first with captain_define.`,
-				},
+				text(
+					`Error: pipeline "${resolvedName}" not found. Define it first with captain_define.`,
+				),
 			],
 			details: undefined,
 		};
@@ -252,21 +251,13 @@ async function runPipeline(
 	updateWidget(ctx, pipelineState);
 
 	if (!ctx.model) {
-		return {
-			content: [{ type: "text" as const, text: "Error: no model available" }],
-			details: undefined,
-		};
+		return { content: [text("Error: no model available")], details: undefined };
 	}
 
 	const apiKey = await ctx.modelRegistry.getApiKey(ctx.model);
 	if (!apiKey) {
 		return {
-			content: [
-				{
-					type: "text" as const,
-					text: "Error: no API key available for the current model",
-				},
-			],
+			content: [text("Error: no API key available for the current model")],
 			details: undefined,
 		};
 	}
@@ -297,16 +288,15 @@ async function runPipeline(
 		clearWidget(ctx);
 		return {
 			content: [
-				{
-					type: "text" as const,
-					text: buildCompletionText(
+				text(
+					buildCompletionText(
 						resolvedName,
 						output,
 						results,
 						pipelineState.startTime,
 						pipelineState.endTime,
 					),
-				},
+				),
 			],
 			details: undefined,
 		};
@@ -316,12 +306,7 @@ async function runPipeline(
 		clearWidget(ctx);
 		const errMsg = err instanceof Error ? err.message : String(err);
 		return {
-			content: [
-				{
-					type: "text" as const,
-					text: `Pipeline "${resolvedName}" failed: ${errMsg}`,
-				},
-			],
+			content: [text(`Pipeline "${resolvedName}" failed: ${errMsg}`)],
 			details: undefined,
 		};
 	}

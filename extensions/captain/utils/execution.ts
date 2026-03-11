@@ -1,9 +1,13 @@
 // ── Shared Execution Utilities ─────────────────────────────────────────────
 // Common patterns used by executeSequential, executePool, and executeParallel
 
-import { runGate } from "../gates.js";
-import { type ExecutorContext, executeStep } from "../steps/runner.js";
-import type { Gate, GateCtx, OnFail, StepResult, Transform } from "../types.js";
+import { runGate } from "../gates/index.js";
+import {
+	type ExecutorContext,
+	executeStep,
+	makeGateCtx,
+} from "../steps/runner.js";
+import type { Gate, OnFail, StepResult, Transform } from "../types.js";
 
 /**
  * Hard ceiling on retry attempts enforced by the executor, regardless of what
@@ -29,16 +33,7 @@ export async function runContainerGate(
 ): Promise<{ output: string; results: StepResult[] }> {
 	if (!gate) return { output, results };
 
-	const gateResult = await runGate(gate, output, {
-		exec: ectx.exec,
-		confirm: ectx.confirm,
-		hasUI: ectx.hasUI,
-		cwd: ectx.cwd,
-		signal: ectx.signal,
-		model: ectx.model,
-		apiKey: ectx.apiKey,
-		modelRegistry: ectx.modelRegistry,
-	});
+	const gateResult = await runGate(gate, output, makeGateCtx(ectx));
 
 	const gateStepResult: StepResult = {
 		label: `[gate] ${scopeLabel}`,
@@ -127,15 +122,5 @@ export async function applyTransform(
 ): Promise<string> {
 	if (!transform) return output;
 
-	const ctx: GateCtx = {
-		cwd: ectx.cwd,
-		signal: ectx.signal,
-		exec: ectx.exec,
-		confirm: ectx.confirm,
-		hasUI: ectx.hasUI,
-		model: ectx.model,
-		apiKey: ectx.apiKey,
-		modelRegistry: ectx.modelRegistry,
-	};
-	return transform({ output, original, ctx });
+	return transform({ output, original, ctx: makeGateCtx(ectx) });
 }

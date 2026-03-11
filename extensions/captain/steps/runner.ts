@@ -18,15 +18,11 @@ import {
 	SessionManager,
 	SettingsManager,
 } from "@mariozechner/pi-coding-agent";
-import { type GateResult, runGate } from "../gates.js";
+import { type GateResult, runGate } from "../gates/index.js";
 import type { GateCtx, Step, StepResult, Transform } from "../types.js";
+import { type ModelRegistryLike, resolveModel } from "../utils/model.js";
 
-/** Model registry interface — for LLM gates and merge strategies */
-export interface ModelRegistryLike {
-	getAll(): Model<Api>[];
-	find(provider: string, modelId: string): Model<Api> | undefined;
-	getApiKey(model: Model<Api>): Promise<string | undefined>;
-}
+export type { ModelRegistryLike };
 
 /** Everything the executor needs from the host environment */
 export interface ExecutorContext {
@@ -105,74 +101,6 @@ function resolveTools(names: string[], cwd: string): AnyAgentTool[] {
 				return [];
 		}
 	});
-}
-
-// ── Model Resolution ──────────────────────────────────────────────────────
-
-/** Returns true if the model ID looks like a dated snapshot (e.g. claude-sonnet-4-5-20250929). */
-function isDatedModel(id: string): boolean {
-	return /\d{8}$/.test(id);
-}
-
-/**
- * Score a model ID for sorting: higher = better (more current, preferred).
- * Ranking strategy (Anthropic-style):
- *   1. New-style alias with no date  e.g. claude-sonnet-4-5         → score 3
- *   2. New-style dated snapshot      e.g. claude-sonnet-4-5-20250929 → score 2
- *   3. Old-style alias               e.g. claude-3-7-sonnet-latest   → score 1
- *   4. Old-style dated snapshot      e.g. claude-3-5-sonnet-20240620 → score 0
- *
- * "New-style" = matches `claude-<name>-<digit>` (no "3-N-" prefix).
- */
-function modelScore(id: string): number {
-	const lower = id.toLowerCase();
-	// New-style: "claude-" then a word, then a digit version — NOT "claude-3-"
-	const isNewStyle = /^claude-(?!\d)/.test(lower);
-	const dated = isDatedModel(lower);
-	if (isNewStyle && !dated) return 3;
-	if (isNewStyle && dated) return 2;
-	if (!(isNewStyle || dated)) return 1;
-	return 0;
-}
-
-/** Resolve a model identifier string (e.g. "sonnet") to a Model object via the registry.
- * Prefers models from the same provider as the fallback (current session model) to avoid
- * accidentally resolving to Amazon Bedrock or other providers when multiple providers
- * have models with the same ID.
- * Among partial matches, ranks by modelScore so that `model: "sonnet"` resolves to
- * the most current available alias (e.g. `claude-sonnet-4-5`) rather than an old dated
- * snapshot (`claude-3-5-sonnet-20240620`) or a deprecated `-latest` alias. */
-export function resolveModel(
-	pattern: string,
-	registry: ModelRegistryLike,
-	fallback: Model<Api>,
-): Model<Api> {
-	const all = registry.getAll();
-	const lower = pattern.toLowerCase();
-	const sameProvider = (m: Model<Api>) => m.provider === fallback.provider;
-
-	// 1. Exact id match within same provider
-	const exactSameProvider = all.find(
-		(m) => m.id.toLowerCase() === lower && sameProvider(m),
-	);
-	if (exactSameProvider) return exactSameProvider;
-
-	// 2. Partial match within same provider (name or id), ranked by modelScore.
-	const partialMatches = all.filter(
-		(m) =>
-			sameProvider(m) &&
-			(m.id.toLowerCase().includes(lower) ||
-				(m as { name?: string }).name?.toLowerCase().includes(lower)),
-	);
-	if (partialMatches.length > 0) {
-		partialMatches.sort((a, b) => modelScore(b.id) - modelScore(a.id));
-		return partialMatches[0];
-	}
-
-	// 3. No match in current provider — fall back to session model to avoid
-	//    accidentally resolving to a different provider (e.g. Amazon Bedrock)
-	//    that the user may not have credentials for.
-	return fallback;
 }
 
 // ── Loader Cache Helper ───────────────────────────────────────────────────
@@ -432,17 +360,7 @@ async function runStepCore(
 	// Dispose session
 	await session.dispose();
 
-	const gateCtx = {
-		exec: ectx.exec,
-		confirm: ectx.confirm,
-		hasUI: ectx.hasUI,
-		cwd: ectx.cwd,
-		signal: ectx.signal,
-		model: ectx.model,
-		apiKey: ectx.apiKey,
-		modelRegistry: ectx.modelRegistry,
-		toolsUsed,
-	};
+	const gateCtx = { ...makeGateCtx(ectx), toolsUsed };
 
 	const gateResult = step.gate
 		? await runGate(step.gate, output, gateCtx)
@@ -593,16 +511,7 @@ async function handleFailure(
 				ectx,
 			);
 			const retryGateResult = step.gate
-				? await runGate(step.gate, retryOutput, {
-						exec: ectx.exec,
-						confirm: ectx.confirm,
-						hasUI: ectx.hasUI,
-						cwd: ectx.cwd,
-						signal: ectx.signal,
-						model: ectx.model,
-						apiKey: ectx.apiKey,
-						modelRegistry: ectx.modelRegistry,
-					})
+				? await runGate(step.gate, retryOutput, makeGateCtx(ectx))
 				: { passed: true, reason: "No gate" };
 			if (retryGateResult.passed)
 				return { status: "passed", output: retryOutput };
@@ -655,6 +564,20 @@ async function handleFailure(
 
 // ── Helper Functions ───────────────────────────────────────────────────────
 
+/** Build a GateCtx from an ExecutorContext (without step-specific fields like toolsUsed). */
+export function makeGateCtx(ectx: ExecutorContext): GateCtx {
+	return {
+		cwd: ectx.cwd,
+		signal: ectx.signal,
+		exec: ectx.exec,
+		confirm: ectx.confirm,
+		hasUI: ectx.hasUI,
+		model: ectx.model,
+		apiKey: ectx.apiKey,
+		modelRegistry: ectx.modelRegistry,
+	};
+}
+
 function interpolatePrompt(
 	template: string,
 	input: string,
@@ -674,15 +597,5 @@ async function applyStepTransform(
 ): Promise<string> {
 	if (!transform) return output;
 
-	const ctx: GateCtx = {
-		cwd: ectx.cwd,
-		signal: ectx.signal,
-		exec: ectx.exec,
-		confirm: ectx.confirm,
-		hasUI: ectx.hasUI,
-		model: ectx.model,
-		apiKey: ectx.apiKey,
-		modelRegistry: ectx.modelRegistry,
-	};
-	return transform({ output, original, ctx });
+	return transform({ output, original, ctx: makeGateCtx(ectx) });
 }

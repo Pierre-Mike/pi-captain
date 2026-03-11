@@ -3,6 +3,7 @@ import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
 import type { CaptainState } from "../state.js";
 import { describeRunnable } from "../utils/index.js";
+import { text } from "./helpers.js";
 
 // ── Helpers extracted to keep execute() complexity low ────────────────────
 
@@ -11,20 +12,18 @@ function listPresets(state: CaptainState, cwd: string) {
 	if (presets.length === 0) {
 		return {
 			content: [
-				{
-					type: "text" as const,
-					text: "No presets found. Add .ts modules to pipelines/ or .json files to .pi/pipelines/",
-				},
+				text(
+					"No presets found. Add .ts modules to pipelines/ or .json files to .pi/pipelines/",
+				),
 			],
 			details: undefined,
 		};
 	}
 	return {
 		content: [
-			{
-				type: "text" as const,
-				text: `Available pipeline presets:\n${presets.map((p) => `  • ${p.name} (${p.source})`).join("\n")}`,
-			},
+			text(
+				`Available pipeline presets:\n${presets.map((p) => `  • ${p.name} (${p.source})`).join("\n")}`,
+			),
 		],
 		details: undefined,
 	};
@@ -33,10 +32,9 @@ function listPresets(state: CaptainState, cwd: string) {
 function missingNameError() {
 	return {
 		content: [
-			{
-				type: "text" as const,
-				text: "Error: 'name' is required for load action. Use action 'list' to see available presets.",
-			},
+			text(
+				"Error: 'name' is required for load action. Use action 'list' to see available presets.",
+			),
 		],
 		details: undefined,
 	};
@@ -48,10 +46,9 @@ async function loadPreset(state: CaptainState, name: string, cwd: string) {
 		if (!resolved) {
 			return {
 				content: [
-					{
-						type: "text" as const,
-						text: `Error: preset or file "${name}" not found.\nUse action 'list' to see available presets, or provide a valid file path.`,
-					},
+					text(
+						`Error: preset or file "${name}" not found.\nUse action 'list' to see available presets, or provide a valid file path.`,
+					),
 				],
 				details: undefined,
 			};
@@ -59,20 +56,18 @@ async function loadPreset(state: CaptainState, name: string, cwd: string) {
 		const summary = describeRunnable(resolved.spec, 0);
 		return {
 			content: [
-				{
-					type: "text" as const,
-					text: `Loaded pipeline "${resolved.name}"${resolved.source ? ` from ${resolved.source}` : ""}\n\n${summary}`,
-				},
+				text(
+					`Loaded pipeline "${resolved.name}"${resolved.source ? ` from ${resolved.source}` : ""}\n\n${summary}`,
+				),
 			],
 			details: undefined,
 		};
 	} catch (err) {
 		return {
 			content: [
-				{
-					type: "text" as const,
-					text: `Error loading pipeline: ${err instanceof Error ? err.message : String(err)}`,
-				},
+				text(
+					`Error loading pipeline: ${err instanceof Error ? err.message : String(err)}`,
+				),
 			],
 			details: undefined,
 		};

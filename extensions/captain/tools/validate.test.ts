@@ -13,7 +13,6 @@ const createMockPi = (): MockPi => {
 	let lastTool: { execute: ToolExecute } | undefined;
 	const mock = {
 		get lastTool() {
-			// biome-ignore lint/style/noNonNullAssertion: always set before access in tests
 			return lastTool as { execute: ToolExecute };
 		},
 		registerTool: (tool: { execute: ToolExecute }) => {
