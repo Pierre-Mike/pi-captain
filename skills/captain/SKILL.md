@@ -45,11 +45,8 @@ Gates and onFail handlers are **plain functions** — no JSON encoding needed.
 
 ```ts
 // my-pipeline.ts
-import { retry, skip, warn } from "<captain>/gates/on-fail.js";
-import { bunTest, command, regexCI, user } from "<captain>/gates/presets.js";
-import { llmFast } from "<captain>/gates/llm.js";
-import { full, summarize } from "<captain>/transforms/presets.js";
-import type { Gate, OnFail, Runnable, Step } from "<captain>/types.js";
+import { retry, skip, warn, bunTest, command, regexCI, user, llmFast, full, summarize } from "./captain.ts";
+import type { Gate, OnFail, Runnable, Step } from "./captain.ts";
 
 const research: Step = {
   kind: "step",
@@ -125,8 +122,12 @@ Import multiple presets from a single file for better autocomplete and fewer imp
 import { 
   bunTest, retry, full, concat, 
   Runnable, Step, Gate, OnFail 
-} from "/Users/pierre-mikel/Github/pi-captain/extensions/captain/index.js";
+} from "./captain";
 ```
+
+> ⚠️ **Always use `"./captain"` — never hardcoded absolute paths.**
+> Pipeline files live in `.pi/pipelines/` alongside the `captain` barrel re-export,
+> so `"./captain"` always resolves correctly regardless of machine or user.
 
 The barrel export includes:
 - **Gate presets**: `command`, `file`, `regexCI`, `allOf`, `user`, `bunTest`
@@ -257,7 +258,7 @@ export const pipeline: Runnable = {
 ### Pool — same step × N (each in own git worktree)
 
 ```ts
-import { vote } from "<captain>/merge.js"; // using standard alias
+import { vote } from "./captain.ts";
 
 export const pipeline: Runnable = {
   kind: "pool",
@@ -273,11 +274,7 @@ export const pipeline: Runnable = {
 Import named presets from `merge.js`:
 
 ```ts
-// Using standard alias
-import { concat, awaitAll, firstPass, vote, rank } from "<captain>/merge.js";
-
-// Using convenience alias  
-import { concat, awaitAll, firstPass, vote, rank } from "captain/merge.js";
+import { concat, awaitAll, firstPass, vote, rank } from "./captain.ts";
 ```
 
 | Preset | Behavior |

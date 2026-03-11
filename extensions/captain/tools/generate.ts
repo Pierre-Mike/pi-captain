@@ -95,6 +95,7 @@ export function registerGenerateTool(pi: ExtensionAPI, state: CaptainState) {
 				// Save to .pi/pipelines/<name>.ts
 				const piDir = join(ctx.cwd, ".pi", "pipelines");
 				if (!existsSync(piDir)) mkdirSync(piDir, { recursive: true });
+				state.ensureCaptainContractFile(ctx.cwd);
 				const filePath = join(piDir, `${generated.name}.ts`);
 				writeFileSync(filePath, generated.tsSource, "utf-8");
 

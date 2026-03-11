@@ -30,6 +30,14 @@ const baseDir = (() => {
 export default function (pi: ExtensionAPI) {
 	const state = new CaptainState(baseDir);
 
+	// ── Contract File ──────────────────────────────────────────────────────
+	// Write .pi/pipelines/captain.ts so pipeline authors get IDE autocomplete.
+	try {
+		state.ensureCaptainContractFile(process.cwd());
+	} catch {
+		/* best-effort — don't crash if .pi/ isn't writable */
+	}
+
 	// ── Bundled Prompts ────────────────────────────────────────────────────
 	pi.on("resources_discover", () => ({
 		promptPaths: [join(baseDir, "prompts", "orchestrate.md")],

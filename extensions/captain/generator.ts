@@ -21,12 +21,8 @@ The file MUST start with these two comment lines (no blank line before them):
 // @description: <one-line description>
 
 Then the full TypeScript module using ONLY these imports:
-- import { retry, retryWithDelay, skip, warn, fallback } from "<captain>/gates/on-fail.js";
-- import { bunTest, command, file as fileGate, regexCI, user, allOf } from "<captain>/gates/presets.js";
-- import { llmFast } from "<captain>/gates/llm.js";
-- import { full, summarize, extract } from "<captain>/transforms/presets.js";
-- import { concat, awaitAll, firstPass, vote, rank } from "<captain>/merge.js";
-- import type { Gate, OnFail, Runnable, Step } from "<captain>/types.js";
+- import { retry, retryWithDelay, skip, warn, fallback, bunTest, command, file as fileGate, regexCI, user, allOf, llmFast, full, summarize, extract, concat, awaitAll, firstPass, vote, rank } from "./captain.ts";
+- import type { Gate, OnFail, Runnable, Step } from "./captain.ts";
 
 The file MUST end with:
 export const pipeline: Runnable = { ... };

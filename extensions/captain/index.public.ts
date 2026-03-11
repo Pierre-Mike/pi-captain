@@ -7,6 +7,8 @@
 // This avoids the need to import from individual files and provides better
 // IDE autocomplete and IntelliSense support.
 
+// ── LLM Gates ──────────────────────────────────────────────────────────────
+export { llmFast } from "./gates/llm.js";
 // ── OnFail Presets ─────────────────────────────────────────────────────────
 export {
 	fallback,
