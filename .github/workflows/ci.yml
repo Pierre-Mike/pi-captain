@@ -85,11 +85,12 @@ jobs:
           LINES=$(echo "$COVERAGE" | grep "All files" | awk '{print $3}')
           BRANCHES=$(echo "$COVERAGE" | grep "All files" | awk '{print $4}')
 
-          # Pick badge color based on percentage
+          # Pick badge color using pure bash integer comparison (no bc needed)
           color() {
-            local pct=$(echo "$1" | tr -d '%')
-            if   (( $(echo "$pct >= 80" | bc -l) )); then echo "brightgreen"
-            elif (( $(echo "$pct >= 60" | bc -l) )); then echo "yellow"
+            local pct=${1//%/}          # strip trailing %
+            pct=${pct%%.*}             # keep integer part only
+            if   [ "${pct:-0}" -ge 80 ]; then echo "brightgreen"
+            elif [ "${pct:-0}" -ge 60 ]; then echo "yellow"
             else echo "red"
             fi
           }
@@ -100,11 +101,20 @@ jobs:
           LINE_ENCODED=$(echo "$LINES" | sed 's/%/%25/')
           BRANCH_ENCODED=$(echo "$BRANCHES" | sed 's/%/%25/')
 
-          LINE_BADGE="![Lines](https://img.shields.io/badge/lines-${LINE_ENCODED}-${LINE_COLOR})"
-          BRANCH_BADGE="![Branches](https://img.shields.io/badge/branches-${BRANCH_ENCODED}-${BRANCH_COLOR})"
+          # Use python to do the sed replacement — avoids delimiter collisions with '|' in URLs
+          python3 - <<PYEOF
+          import re, pathlib
 
-          sed -i "s|!\[Lines\](https://img\.shields\.io/badge/lines-[^)]*)|${LINE_BADGE}|" README.md
-          sed -i "s|!\[Branches\](https://img\.shields\.io/badge/branches-[^)]*)|${BRANCH_BADGE}|" README.md
+          readme = pathlib.Path("README.md").read_text()
+
+          line_badge   = "![Lines](https://img.shields.io/badge/lines-${LINE_ENCODED}-${LINE_COLOR})"
+          branch_badge = "![Branches](https://img.shields.io/badge/branches-${BRANCH_ENCODED}-${BRANCH_COLOR})"
+
+          readme = re.sub(r'!\[Lines\]\(https://img\.shields\.io/badge/lines-[^)]*\)',   line_badge,   readme)
+          readme = re.sub(r'!\[Branches\]\(https://img\.shields\.io/badge/branches-[^)]*\)', branch_badge, readme)
+
+          pathlib.Path("README.md").write_text(readme)
+          PYEOF
 
           echo "Updated: lines=${LINES} (${LINE_COLOR}), branches=${BRANCHES} (${BRANCH_COLOR})"
       - name: Commit updated badges
