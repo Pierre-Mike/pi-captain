@@ -18,6 +18,45 @@ pi install -l git:github.com/Pierre-Mike/pi-captain
 pi install git:github.com/Pierre-Mike/pi-captain
 ```
 
+## Package Contents
+
+| Type | Path | Description |
+|------|------|-------------|
+| Extension | `extensions/captain/` | Captain pipeline orchestrator — all tools & commands |
+| Skill | `skills/captain/SKILL.md` | Captain skill — guides the LLM on pipeline authoring |
+
+## Selective Install
+
+Don't want everything? Use the object form in your `settings.json` to load only what you need.
+
+**Extension only (no skill):**
+```json
+{
+  "packages": [
+    {
+      "source": "git:github.com/Pierre-Mike/pi-captain",
+      "skills": []
+    }
+  ]
+}
+```
+
+**Skill only (no extension tools):**
+```json
+{
+  "packages": [
+    {
+      "source": "git:github.com/Pierre-Mike/pi-captain",
+      "extensions": []
+    }
+  ]
+}
+```
+
+Or use `pi config` after installing to interactively toggle extensions and skills on/off.
+
+---
+
 ## What You Get
 
 ### Tools
@@ -28,7 +67,6 @@ pi install git:github.com/Pierre-Mike/pi-captain
 | `captain_run` | Execute a pipeline with input |
 | `captain_status` | Check pipeline progress, tokens, cost, and gate results |
 | `captain_list` | List all defined pipelines |
-| `captain_define` | Define a pipeline from a JSON spec (the Runnable tree) |
 | `captain_generate` | Generate a TypeScript pipeline file on-the-fly using LLM |
 | `captain_validate` | Validate a pipeline specification for structural correctness |
 

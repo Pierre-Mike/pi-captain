@@ -31,7 +31,8 @@
 		],
 		"skills": [
 			"./skills"
-		]
+		],
+		"image": "https://raw.githubusercontent.com/Pierre-Mike/pi-captain/main/assets/preview.png"
 	},
 	"dependencies": {
 		"neverthrow": "^8.2.0"
