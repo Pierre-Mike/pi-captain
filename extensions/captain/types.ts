@@ -59,15 +59,7 @@ export interface OnFailCtx {
 	readonly output: string;
 }
 
-/**
- * The decision an OnFail handler returns — what to do after a gate fails.
- *
- * - `retry`    — re-run the step/scope (any delay is the function's responsibility)
- * - `fail`     — abort the step and mark it as failed
- * - `skip`     — mark as skipped and continue with empty output
- * - `warn`     — log a warning but treat as passed and continue
- * - `fallback` — run an alternative Step instead
- */
+/** Decision returned by OnFail: retry | fail | skip | warn | fallback(step) */
 export type OnFailResult =
 	| { readonly action: "retry" }
 	| { readonly action: "fail" }
@@ -75,22 +67,13 @@ export type OnFailResult =
 	| { readonly action: "warn" }
 	| { readonly action: "fallback"; readonly step: Step };
 
-/**
- * Failure handling strategy — a pure function that receives failure context
- * and returns what to do next. All behaviour (retry limits, delays) lives
- * inside the function; the executor only acts on the returned decision.
- */
+/** Failure handler — pure function; all retry logic lives inside it. */
 export type OnFail = (ctx: OnFailCtx) => OnFailResult | Promise<OnFailResult>;
 
-/**
- * Context passed to a Transform function — same surface as GateCtx so
- * transforms can exec shell commands, call LLMs, or interact with the UI.
- */
+/** Same surface as GateCtx — transforms can exec shell, call LLMs, or use the UI. */
 export type TransformCtx = GateCtx;
 
-/**
- * A transform is a plain function that maps one step's output to the next step's input.
- */
+/** Maps one step's output to the next step's input. */
 export type Transform = (params: {
 	/** The raw output produced by the step */
 	readonly output: string;
@@ -100,9 +83,7 @@ export type Transform = (params: {
 	readonly ctx: TransformCtx;
 }) => string | Promise<string>;
 
-/**
- * A merge function combines multiple branch outputs into one.
- */
+/** Combines multiple branch outputs into one string. */
 export type MergeFn = (
 	outputs: readonly string[],
 	ctx: import("./core/merge.js").MergeCtx,
@@ -110,9 +91,7 @@ export type MergeFn = (
 
 // ── Composition Types (infinitely nestable) ────────────────────────────────
 
-/**
- * Model identifier — known shorthands or any full model ID.
- */
+/** Known shorthands or any full model ID string. */
 export type ModelId = "sonnet" | "flash" | "haiku" | "opus" | (string & {});
 
 /** Atomic unit — a single `pi --print` invocation */
