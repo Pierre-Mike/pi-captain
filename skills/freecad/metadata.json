@@ -1,0 +1,16 @@
+{
+	"triggers": [
+		"freecad",
+		"create 3D shape",
+		"create box cylinder sphere",
+		"export FCStd",
+		"open FreeCAD file",
+		"batch export CAD",
+		"FreeCAD Python script",
+		"parametric CAD",
+		"marine CAD",
+		"hull geometry",
+		"STEP IGES STL export",
+		"FreeCAD agent"
+	]
+}

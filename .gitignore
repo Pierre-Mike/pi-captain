@@ -6,6 +6,12 @@ node_modules/
 .DS_Store
 .worktrees/
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.log
+
 # Personal pipeline JSON files (moved to ~/.pi/pipelines/)
 .pi/
 .vscode/

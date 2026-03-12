@@ -1,0 +1,15 @@
+{
+	"triggers": [
+		"json canvas",
+		"canvas file",
+		"obsidian canvas",
+		"create canvas",
+		"update canvas",
+		".canvas file",
+		"flowchart",
+		"architecture diagram",
+		"visual documentation",
+		"node graph",
+		"mind map canvas"
+	]
+}

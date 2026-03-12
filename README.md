@@ -20,10 +20,34 @@ pi install git:github.com/Pierre-Mike/pi-captain
 
 ## Package Contents
 
-| Type | Path | Description |
-|------|------|-------------|
-| Extension | `extensions/captain/` | Captain pipeline orchestrator — all tools & commands |
-| Skill | `skills/captain/SKILL.md` | Captain skill — guides the LLM on pipeline authoring |
+### Extensions
+
+| Path | Description |
+|------|-------------|
+| `extensions/captain/` | Captain pipeline orchestrator — all tools & commands |
+| `extensions/web-search.ts` | `web_search` tool — live internet search via Anthropic's web search beta |
+| `extensions/loop.ts` | `/loop` command — repeat agent turns by goal, count, or pipeline stages |
+| `extensions/clear.ts` | `/clear` and `/reset` commands — wipe session and reload |
+| `extensions/terminal.ts` | `/terminal` command — open a terminal split in your editor |
+| `extensions/zellij-tab-namer.ts` | Auto-renames the Zellij tab after each agent turn |
+| `extensions/refactor-loop/` | `/refactor` command — iterative analyze→refactor→verify cycles with `refactor_pass` tool |
+| `extensions/safety-destructive-commands/` | Blocks/confirms dangerous bash commands (`rm -rf`, `dd`, fork bombs…) |
+| `extensions/safety-git-operations/` | Confirms risky git ops (`push --force`, `reset --hard`, `clean -f`…) |
+| `extensions/safety-network-exfiltration/` | Blocks curl-pipe-to-shell, secret leaks, sensitive file transfers |
+| `extensions/safety-path-protection/` | Protects `.git/`, `node_modules/`, `.env`, SSH keys from writes |
+| `extensions/freecad.ts` | `freecad_*` tools — drive FreeCAD to create/export 3D models |
+
+### Skills
+
+| Path | Description |
+|------|-------------|
+| `skills/captain/` | Captain skill — guides the LLM on pipeline authoring |
+| `skills/research-swarm/` | Parallel 5-agent research with democratic scoring |
+| `skills/refactor-loop/` *(bundled in extension)* | Refactor loop workflow instructions |
+| `skills/json-canvas/` | JSON Canvas format for Obsidian `.canvas` files |
+| `skills/extension-generator/` | Build and debug pi extensions |
+| `skills/skill-generator/` | Generate new pi skills |
+| `skills/freecad/` | FreeCAD agent wrapper and shell runner |
 
 ## Selective Install
 

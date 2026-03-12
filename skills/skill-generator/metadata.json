@@ -1,0 +1,10 @@
+{
+	"triggers": [
+		"Generating a new Claude Code skill from requirements, domain knowledge, or user-provided specifications. This includes creating the full skill directory structure with SKILL.md, metadata.json, rules/ directory, and optionally references/ and scripts/ directories. Use when the user asks to create, build, or generate a skill for any domain.",
+		"Scaffolding a skill directory structure with TODO-filled templates ready for customization. This covers initializing a new skill from scratch using the init-skill script or manually creating the standard 3-file structure. Use when the user wants a starting point for a new skill without writing everything from scratch.",
+		"Converting an existing script, workflow, or set of conventions into a reusable, packaged Claude Code skill. This involves analyzing existing code or documentation, extracting patterns, and organizing them into the progressive disclosure structure with core concepts in SKILL.md and detailed rules in separate files.",
+		"Building a skill grounded in real codebase patterns by searching for domain-relevant conventions, existing skills, configuration files, or established practices. Use when the user wants rules that reflect actual project usage rather than generic placeholder guidance.",
+		"Restructuring or refactoring an existing skill that has grown too large or is poorly organized. This includes splitting a monolithic SKILL.md into progressive disclosure patterns, adding references/ for domain-specific content, converting flat rule lists into decision trees, and matching rule specificity to task fragility.",
+		"Validating or analyzing an existing skill directory for structural correctness, completeness, and quality. This includes checking SKILL.md frontmatter format, verifying rule file conventions, measuring description word counts, estimating token usage, and identifying missing standard sections."
+	]
+}
