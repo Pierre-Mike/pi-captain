@@ -48,7 +48,6 @@ export const bddScenarios: Step = {
 	label: "BDD Scenarios",
 	tools: ["read", "bash"],
 	model: "sonnet",
-	temperature: 0.3,
 	description:
 		"Distill user stories into Given/When/Then acceptance scenarios (ATDD outer loop)",
 	prompt,

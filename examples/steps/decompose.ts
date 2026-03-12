@@ -44,7 +44,6 @@ export const decompose: Step = {
 	label: "Decompose",
 	tools: ["read", "bash"],
 	model: "sonnet",
-	temperature: 0.2,
 	description: "Recursively split the spec into atomic sub-tasks",
 	prompt,
 	onFail: retry(),

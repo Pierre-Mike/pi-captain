@@ -48,7 +48,6 @@ export const exploreRequirements: Step = {
 	label: "Explore Requirements",
 	tools: ["read", "bash"],
 	model: "sonnet",
-	temperature: 0.7,
 	description:
 		"Broad discovery with open-ended questions to understand vision, goals, and context",
 	prompt,

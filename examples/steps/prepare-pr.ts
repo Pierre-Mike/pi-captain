@@ -56,7 +56,6 @@ export const preparePR: Step = {
 	kind: "step",
 	label: "Prepare PR",
 	tools: ["read", "bash", "edit", "write", "grep", "find", "ls"],
-	temperature: 0.1,
 	description:
 		"Create a feature branch, stage changes, write a conventional commit, and push",
 	prompt,

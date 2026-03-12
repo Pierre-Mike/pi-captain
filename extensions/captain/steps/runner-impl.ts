@@ -26,6 +26,7 @@ export async function runPrompt(
 	prompt: string,
 	step: Step,
 	ectx: ExecutorContext,
+	disposeAfter = true,
 ): Promise<{ output: string; toolCallCount: number }> {
 	const toolNames = step.tools ?? ["read", "bash", "edit", "write"];
 	session.setActiveToolsByName([...toolNames]);
@@ -78,7 +79,7 @@ export async function runPrompt(
 	if (!output && toolOutputs.length > 0) output = toolOutputs.join("\n\n");
 	_captainDebug(`[${step.label}] output="${output.slice(0, 100)}"\n`);
 
-	await session.dispose();
+	if (disposeAfter) await session.dispose();
 	return { output, toolCallCount };
 }
 

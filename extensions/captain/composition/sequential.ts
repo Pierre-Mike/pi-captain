@@ -3,18 +3,20 @@
 
 import type { Runnable, Sequential, StepResult } from "../core/types.js";
 import {
+	createPipelineSession,
 	type ExecutorContext,
 	executeStep,
-	prefetchSession,
-	type WarmSession,
 } from "../steps/runner.js";
 import { applyTransform, runContainerGate } from "./execution.js";
 
 /**
- * Execute a sequential pipeline with 1-step lookahead prefetch optimization.
- * While step[i]'s prompt is running (blocking on the LLM), we fire off
- * createAgentSession for step[i+1] in the background. By the time step[i]
- * finishes and we know $INPUT, the session for step[i+1] is already warm.
+ * Execute a sequential pipeline using one shared agent session for the run.
+ * Compatible steps (no custom systemPrompt / skills / extensions) reuse the
+ * pipeline-level session — `session.newSession()` clears history between steps
+ * and `session.setModel()` swaps the model when a step overrides it.
+ *
+ * Steps that require a different loader config fall back automatically to a
+ * per-step session inside `executeStep`.
  */
 export async function executeSequential(
 	seq: Sequential,
@@ -31,60 +33,41 @@ export async function executeSequential(
 	let currentInput = input;
 	const allResults: StepResult[] = [];
 
-	// Kick off a background session creation for `step`, or return null if
-	// the step isn't a plain Step (nested sequential/pool/parallel).
-	const startPrefetch = (runnable: Runnable): Promise<WarmSession | null> =>
-		runnable.kind === "step"
-			? prefetchSession(runnable, ectx)
-			: Promise.resolve(null);
-
-	// Pre-warm the session for the very first step immediately.
-	let nextPrefetch: Promise<WarmSession | null> =
-		seq.steps.length > 0 ? startPrefetch(seq.steps[0]) : Promise.resolve(null);
-
-	for (let i = 0; i < seq.steps.length; i++) {
-		if (ectx.signal?.aborted) {
-			// Pipeline cancelled — dispose any pending prefetch to avoid leaking sessions.
-			nextPrefetch
-				.then((w) => w?.session.dispose())
-				.catch((_e: unknown) => {
-					/* best-effort dispose — ignore errors */
-				});
-			break;
+	// Create a single shared session for the whole sequential run and attach it
+	// to a local copy of ectx so parallel/pool siblings are unaffected.
+	// If session creation fails (e.g. auth error during startup), fall back
+	// gracefully to per-step session creation inside executeStep.
+	let pipelineSession: Awaited<
+		ReturnType<typeof createPipelineSession>
+	> | null = null;
+	if (seq.steps.length > 0) {
+		try {
+			pipelineSession = await createPipelineSession(ectx);
+		} catch {
+			// Best-effort — per-step creation will surface the real error at runtime.
 		}
+	}
+	const localEctx: ExecutorContext = pipelineSession
+		? { ...ectx, sharedSession: pipelineSession }
+		: ectx;
 
-		const runnable = seq.steps[i];
+	try {
+		for (const runnable of seq.steps) {
+			if (ectx.signal?.aborted) break;
 
-		// Await the pre-warmed session for THIS step (created during the previous step).
-		const warm = await nextPrefetch;
+			const { output, results } =
+				runnable.kind === "step"
+					? await executeStep(runnable, currentInput, original, localEctx)
+					: await executeRunnable(runnable, currentInput, original, localEctx);
 
-		// Immediately kick off prefetch for the NEXT step — runs concurrently
-		// with this step's LLM call, which is the long part.
-		nextPrefetch =
-			i + 1 < seq.steps.length
-				? startPrefetch(seq.steps[i + 1])
-				: Promise.resolve(null);
+			allResults.push(...results);
+			currentInput = output;
 
-		// Run the current step, handing it the warm session.
-		const { output, results } =
-			runnable.kind === "step"
-				? await executeStep(runnable, currentInput, original, ectx, warm)
-				: await executeRunnable(runnable, currentInput, original, ectx);
-		// ↑ warm session is unused for nested runnables; it was null anyway.
-
-		allResults.push(...results);
-		currentInput = output;
-
-		const lastResult = results.at(-1);
-		if (lastResult?.status === "failed") {
-			// Step failed — dispose any pending prefetch before bailing.
-			nextPrefetch
-				.then((w) => w?.session.dispose())
-				.catch((_e: unknown) => {
-					/* best-effort dispose — ignore errors */
-				});
-			break;
+			const lastResult = results.at(-1);
+			if (lastResult?.status === "failed") break;
 		}
+	} finally {
+		await pipelineSession?.session.dispose();
 	}
 
 	const checked = await runContainerGate(

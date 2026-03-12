@@ -101,7 +101,6 @@ export interface Step {
 
 	readonly model?: ModelId;
 	readonly tools?: readonly string[];
-	readonly temperature?: number;
 	readonly systemPrompt?: string;
 	readonly skills?: readonly string[];
 	readonly extensions?: readonly string[];

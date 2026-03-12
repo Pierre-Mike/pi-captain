@@ -2,7 +2,7 @@
 name: captain
 description: >
   Orchestrate multi-step workflows using Captain pipelines. Each step declares
-  its own model, tools, and temperature inline — no separate agent setup needed.
+  its own model and tools inline — no separate agent setup needed.
   Supports sequential, parallel, and pool composition with quality gates,
   failure handling, and merge strategies. Use when building research, code
   generation, review, or any multi-step LLM workflow.
@@ -75,7 +75,6 @@ const review: Step = {
   label: "Review",
   model: "flash",
   tools: ["read", "bash"],
-  temperature: 0.3,
   prompt: "Review this implementation:\n$INPUT\n\nOriginal: $ORIGINAL",
   gate: user,                   // requires human approval in interactive UI
   onFail: skip,
@@ -144,7 +143,6 @@ The barrel export includes:
 | `prompt` | string | required | Instructions for the step. Supports `$INPUT`, `$ORIGINAL` |
 | `model` | string | session model | e.g. `"sonnet"`, `"flash"` |
 | `tools` | string[] | `["read","bash","edit","write"]` | Tool names to enable |
-| `temperature` | number | — | Sampling temperature (0–1) |
 | `systemPrompt` | string | — | System prompt for the LLM session |
 | `skills` | string[] | — | Additional skill file paths to inject |
 | `extensions` | string[] | — | Additional extension file paths to load |

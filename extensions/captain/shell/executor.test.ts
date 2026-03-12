@@ -50,6 +50,12 @@ mock.module("@mariozechner/pi-coding-agent", () => ({
 			dispose: () => {
 				/* test stub */
 			},
+			newSession: () => {
+				/* test stub — clears conversation history */
+			},
+			setModel: async () => {
+				/* test stub — swaps model */
+			},
 			setActiveToolsByName: () => {
 				/* test stub */
 			},
@@ -252,10 +258,12 @@ describe("executeRunnable: sequential", () => {
 		const callOutputs = outputs;
 		mock.module("@mariozechner/pi-coding-agent", () => ({
 			createAgentSession: async () => {
-				const out = callOutputs[n++ % callOutputs.length];
 				return {
 					session: {
+						// Capture n at subscribe-time so the shared session returns a
+						// different output for each step (each step calls subscribe once).
 						subscribe: (fn: (e: unknown) => void) => {
+							const out = callOutputs[n++ % callOutputs.length];
 							fn({
 								type: "message_update",
 								assistantMessageEvent: {
@@ -276,7 +284,12 @@ describe("executeRunnable: sequential", () => {
 						dispose: () => {
 							/* test stub */
 						},
-
+						newSession: () => {
+							/* test stub */
+						},
+						setModel: async () => {
+							/* test stub */
+						},
 						setActiveToolsByName: () => {
 							/* test stub */
 						},
@@ -397,7 +410,12 @@ describe("executeRunnable: sequential", () => {
 					dispose: () => {
 						/* test stub */
 					},
-
+					newSession: () => {
+						/* test stub */
+					},
+					setModel: async () => {
+						/* test stub */
+					},
 					setActiveToolsByName: () => {
 						/* test stub */
 					},
@@ -459,7 +477,12 @@ describe("executeRunnable: sequential", () => {
 					dispose: () => {
 						/* test stub */
 					},
-
+					newSession: () => {
+						/* test stub */
+					},
+					setModel: async () => {
+						/* test stub */
+					},
 					setActiveToolsByName: () => {
 						/* test stub */
 					},
@@ -522,7 +545,12 @@ describe("executeRunnable: sequential", () => {
 					dispose: () => {
 						/* test stub */
 					},
-
+					newSession: () => {
+						/* test stub */
+					},
+					setModel: async () => {
+						/* test stub */
+					},
 					setActiveToolsByName: () => {
 						/* test stub */
 					},
@@ -589,7 +617,12 @@ describe("executeRunnable: parallel", () => {
 					dispose: () => {
 						/* test stub */
 					},
-
+					newSession: () => {
+						/* test stub */
+					},
+					setModel: async () => {
+						/* test stub */
+					},
 					setActiveToolsByName: () => {
 						/* test stub */
 					},
@@ -659,7 +692,12 @@ describe("executeRunnable: parallel", () => {
 					dispose: () => {
 						/* test stub */
 					},
-
+					newSession: () => {
+						/* test stub */
+					},
+					setModel: async () => {
+						/* test stub */
+					},
 					setActiveToolsByName: () => {
 						/* test stub */
 					},
@@ -717,7 +755,12 @@ describe("executeRunnable: parallel", () => {
 					dispose: () => {
 						/* test stub */
 					},
-
+					newSession: () => {
+						/* test stub */
+					},
+					setModel: async () => {
+						/* test stub */
+					},
 					setActiveToolsByName: () => {
 						/* test stub */
 					},
@@ -782,7 +825,12 @@ describe("executeRunnable: pool", () => {
 					dispose: () => {
 						/* test stub */
 					},
-
+					newSession: () => {
+						/* test stub */
+					},
+					setModel: async () => {
+						/* test stub */
+					},
 					setActiveToolsByName: () => {
 						/* test stub */
 					},
@@ -850,7 +898,12 @@ describe("executeRunnable: pool", () => {
 					dispose: () => {
 						/* test stub */
 					},
-
+					newSession: () => {
+						/* test stub */
+					},
+					setModel: async () => {
+						/* test stub */
+					},
 					setActiveToolsByName: () => {
 						/* test stub */
 					},
@@ -912,7 +965,12 @@ describe("executeRunnable: pool", () => {
 					dispose: () => {
 						/* test stub */
 					},
-
+					newSession: () => {
+						/* test stub */
+					},
+					setModel: async () => {
+						/* test stub */
+					},
 					setActiveToolsByName: () => {
 						/* test stub */
 					},
@@ -974,7 +1032,12 @@ describe("executeRunnable: lifecycle callbacks", () => {
 					dispose: () => {
 						/* test stub */
 					},
-
+					newSession: () => {
+						/* test stub */
+					},
+					setModel: async () => {
+						/* test stub */
+					},
 					setActiveToolsByName: () => {
 						/* test stub */
 					},
@@ -1044,7 +1107,12 @@ describe("executeRunnable: lifecycle callbacks", () => {
 					dispose: () => {
 						/* test stub */
 					},
-
+					newSession: () => {
+						/* test stub */
+					},
+					setModel: async () => {
+						/* test stub */
+					},
 					setActiveToolsByName: () => {
 						/* test stub */
 					},

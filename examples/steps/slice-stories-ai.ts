@@ -64,7 +64,6 @@ export const sliceStoriesAi: Step = {
 	label: "Slice Stories (AI)",
 	tools: ["read", "bash"],
 	model: "sonnet",
-	temperature: 0.2,
 	description:
 		"Codebase-aware vertical story slicing: EARS reqs → INVEST stories with file area mapping",
 	prompt,

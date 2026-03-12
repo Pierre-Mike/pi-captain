@@ -62,7 +62,6 @@ export const validateAtomicity: Step = {
 	label: "Validate Atomicity",
 	tools: ["read"],
 	model: "flash",
-	temperature: 0,
 	description:
 		"Verify each TDD task is truly atomic: 1 function, 1 test, 5–15 min",
 	prompt,

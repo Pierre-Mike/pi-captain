@@ -47,7 +47,6 @@ export const synthesizePrVerdict: Step = {
 	label: "Synthesize PR Verdict",
 	tools: ["read", "bash"],
 	model: "flash",
-	temperature: 0,
 	description: `Aggregate all file findings → final verdict + reasoning, then post review to GitHub via CLI`,
 	prompt,
 	onFail: retry(),

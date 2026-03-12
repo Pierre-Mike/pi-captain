@@ -48,7 +48,6 @@ export const earsStructure: Step = {
 	label: "EARS Structure",
 	tools: ["read", "bash"],
 	model: "sonnet",
-	temperature: 0.3,
 	description:
 		"Transform raw requirement into testable EARS-structured statements",
 	prompt,

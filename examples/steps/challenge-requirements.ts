@@ -62,7 +62,6 @@ export const challengeRequirements: Step = {
 	label: "Challenge & Validate",
 	tools: ["read", "bash"],
 	model: "sonnet",
-	temperature: 0.6,
 	description:
 		"Stress-test assumptions, find contradictions, and close remaining gaps",
 	prompt,

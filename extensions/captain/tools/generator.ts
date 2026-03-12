@@ -34,7 +34,6 @@ const myStep: Step = {
   label: "Human-readable name",
   model: "sonnet",          // optional: "sonnet" | "flash" | omit for session default
   tools: ["read", "bash", "edit", "write"],
-  temperature: 0.2,         // optional
   prompt: "Do X based on: $INPUT\\n\\nOriginal goal: $ORIGINAL",
   gate: bunTest,            // or: command("npm test"), file("dist/out.js"), regexCI("^ok"), user, undefined
   onFail: retry(3),         // or: skip, warn, retryWithDelay(3, 2000), fallback(otherStep)

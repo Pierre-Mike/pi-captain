@@ -45,7 +45,6 @@ export const tddRed: Step = {
 	kind: "step",
 	label: "TDD Red — Write Failing Tests",
 	tools: ["read", "bash", "edit", "write", "grep", "find", "ls"],
-	temperature: 0.2,
 	description:
 		"Write comprehensive test suites from the spec. Tests MUST fail (no implementation yet).",
 	prompt,

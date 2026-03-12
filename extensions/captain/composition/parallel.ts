@@ -89,6 +89,7 @@ export async function executeParallel(
 				...ectx,
 				cwd: wt?.worktreePath ?? ectx.cwd,
 				stepGroup: parGroup,
+				sharedSession: undefined, // each branch needs its own session
 			};
 			const result = await executeRunnable(step, input, original, branchCtx);
 			// Commit any file changes produced by this worker (only on success —

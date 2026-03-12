@@ -10,12 +10,13 @@ import { _captainDebug, handleFailure, runPrompt } from "./runner-impl.js";
 import {
 	type AgentSession,
 	createStepSession,
+	isSessionCompatible,
 	type WarmSession,
 } from "./session.js";
 
 export type { WarmSession };
 export type { ExecutorContext } from "./executor-context.js";
-export { prefetchSession } from "./session.js";
+export { createPipelineSession, isSessionCompatible } from "./session.js";
 
 import type { ExecutorContext } from "./executor-context.js";
 
@@ -46,9 +47,34 @@ export async function applyStepTransform(
 	return transform({ output, original, ctx: makeGateCtx(ectx) });
 }
 
+/** Resolve which AgentSession to use for a step and whether to dispose it after. */
+async function resolveSession(
+	step: Step,
+	ectx: ExecutorContext,
+	resolvedModel: Model<Api>,
+	warmSession: WarmSession | null | undefined,
+	useShared: boolean,
+): Promise<{ session: AgentSession; disposeAfter: boolean }> {
+	if (useShared && ectx.sharedSession) {
+		const session = ectx.sharedSession.session;
+		session.newSession();
+		if (step.model) await session.setModel(resolvedModel);
+		return { session, disposeAfter: false };
+	}
+	const session =
+		warmSession?.session ??
+		(await createStepSession(step, ectx, resolvedModel));
+	return { session, disposeAfter: true };
+}
+
 /**
  * Execute a single step — entry point for all step execution.
  * Coordinates session creation, prompt execution, gate evaluation, and failure handling.
+ *
+ * Session priority:
+ *  1. `ectx.sharedSession` when the step is loader-compatible (sequential fast path)
+ *  2. `warmSession` argument (kept for parallel/pool callers that pre-warm per-step)
+ *  3. Cold `createStepSession` as final fallback
  */
 export async function executeStep(
 	step: Step,
@@ -60,11 +86,13 @@ export async function executeStep(
 	const start = Date.now();
 	ectx.onStepStart?.(step.label);
 
-	const resolvedModel: Model<Api> =
-		warmSession?.resolvedModel ??
-		(step.model
-			? resolveModel(step.model, ectx.modelRegistry, ectx.model)
-			: ectx.model);
+	// Determine whether the pipeline-level shared session can serve this step.
+	const useShared =
+		ectx.sharedSession !== undefined && isSessionCompatible(step);
+
+	const resolvedModel: Model<Api> = step.model
+		? resolveModel(step.model, ectx.modelRegistry, ectx.model)
+		: (warmSession?.resolvedModel ?? ectx.model);
 
 	const result: StepResult = {
 		label: step.label,
@@ -77,17 +105,23 @@ export async function executeStep(
 	};
 
 	try {
-		const session =
-			warmSession?.session ??
-			(await createStepSession(step, ectx, resolvedModel));
+		const { session, disposeAfter } = await resolveSession(
+			step,
+			ectx,
+			resolvedModel,
+			warmSession,
+			useShared,
+		);
+
 		const interpolated = step.prompt
 			.replace(/\$INPUT/g, input)
 			.replace(/\$ORIGINAL/g, original);
 		const { output, toolCallCount } = await runPrompt(
-			session as AgentSession,
+			session,
 			interpolated,
 			step,
 			ectx,
+			disposeAfter,
 		);
 
 		const gateCtx = makeGateCtx(ectx);

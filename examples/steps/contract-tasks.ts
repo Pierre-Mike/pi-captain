@@ -84,7 +84,6 @@ export const contractTasks: Step = {
 	label: "Contract Tasks",
 	tools: ["read", "bash"],
 	model: "sonnet",
-	temperature: 0.2,
 	description:
 		"Convert BDD scenarios into typed AI execution contracts (prompt-as-contract pattern, UNIT-N format)",
 	prompt,

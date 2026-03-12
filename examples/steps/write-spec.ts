@@ -59,7 +59,6 @@ export const writeSpec: Step = {
 	kind: "step",
 	label: "Write Technical Spec",
 	tools: ["read", "bash", "grep", "find", "ls"],
-	temperature: 0.3,
 	description:
 		"Analyze the requirement and codebase, then produce a detailed technical specification",
 	prompt,

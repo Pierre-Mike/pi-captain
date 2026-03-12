@@ -43,7 +43,6 @@ export const validateUnits: Step = {
 	label: "Validate",
 	tools: ["read"],
 	model: "flash",
-	temperature: 0,
 	description:
 		"Flash dry-run: confirm each unit can be executed in a single pass with no ambiguity",
 	prompt,

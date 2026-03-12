@@ -44,7 +44,6 @@ export const generateExecutionSpec: Step = {
 	label: "Generate Execution Spec",
 	tools: ["read", "bash"],
 	model: "flash",
-	temperature: 0,
 	description:
 		"Convert the task tree into an executable captain pipeline JSON spec",
 	prompt,

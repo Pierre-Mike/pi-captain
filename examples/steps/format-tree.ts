@@ -46,7 +46,6 @@ export const formatTree: Step = {
 	label: "Format Tree",
 	tools: ["read", "bash"],
 	model: "sonnet",
-	temperature: 0.1,
 	description: "Structure layered units into the final nested task tree",
 	prompt,
 	transform: full,

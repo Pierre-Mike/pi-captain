@@ -19,7 +19,6 @@ import {
 	SettingsManager,
 } from "@mariozechner/pi-coding-agent";
 import type { Step } from "../core/types.js";
-import { resolveModel } from "../core/utils/model.js";
 import type { ExecutorContext } from "./runner.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: tool schemas vary per tool
@@ -140,30 +139,49 @@ export async function createStepSession(
 		settingsManager: SettingsManager.inMemory({
 			compaction: { enabled: false },
 		}),
-		...(step.temperature !== undefined && { temperature: step.temperature }),
 	});
 	return session;
 }
 
 /**
- * Start creating an agent session for `step` in the background.
- * Purely opportunistic — never throws; errors fall back to the cold-start path.
+ * Create a long-lived pipeline-level session with all standard tools wired.
+ * The session is NOT disposed — the caller owns its lifecycle.
+ *
+ * Sequential pipelines use this one session across all compatible steps,
+ * calling `session.newSession()` + `session.setModel()` between steps instead
+ * of tearing down and recreating a session for every step.
  */
-export function prefetchSession(
-	step: Step,
+export async function createPipelineSession(
 	ectx: ExecutorContext,
-): Promise<WarmSession | null> {
-	return (async (): Promise<WarmSession | null> => {
-		if (ectx.signal?.aborted) return null;
-		try {
-			const resolvedModel = step.model
-				? resolveModel(step.model, ectx.modelRegistry, ectx.model)
-				: ectx.model;
-			const session = await createStepSession(step, ectx, resolvedModel);
-			return { session, resolvedModel };
-		} catch {
-			// Best-effort — never crash the pipeline on prefetch failure.
-			return null;
-		}
-	})();
+): Promise<WarmSession> {
+	const allTools = resolveTools(
+		["read", "bash", "edit", "write", "grep", "find", "ls"],
+		ectx.cwd,
+	);
+	const loader = await getOrCreateLoader(ectx, undefined, undefined, undefined);
+	const { session } = await createAgentSession({
+		cwd: ectx.cwd,
+		model: ectx.model,
+		tools: allTools,
+		resourceLoader: loader,
+		sessionManager: SessionManager.inMemory(),
+		settingsManager: SettingsManager.inMemory({
+			compaction: { enabled: false },
+		}),
+	});
+	return { session, resolvedModel: ectx.model };
+}
+
+/**
+ * Returns true when `step` can reuse the pipeline-level shared session.
+ * A step is compatible when it does not require a custom loader config
+ * (i.e. no step-level systemPrompt, skills, or extensions).
+ * Steps that override the model are still compatible — we swap via setModel().
+ */
+export function isSessionCompatible(step: Step): boolean {
+	return (
+		step.systemPrompt === undefined &&
+		(step.skills?.length ?? 0) === 0 &&
+		(step.extensions?.length ?? 0) === 0
+	);
 }

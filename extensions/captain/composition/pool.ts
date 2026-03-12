@@ -89,6 +89,7 @@ export async function executePool(
 				...ectx,
 				cwd: wt?.worktreePath ?? ectx.cwd,
 				stepGroup: poolGroup,
+				sharedSession: undefined, // each branch needs its own session
 			};
 			// Tag each pool instance with its index so they get unique labels in
 			// currentSteps/results — without this all N instances share one label

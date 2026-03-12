@@ -57,7 +57,6 @@ export const deepDiveRequirements: Step = {
 	label: "Deep Dive Requirements",
 	tools: ["read", "bash"],
 	model: "sonnet",
-	temperature: 0.5,
 	description:
 		"Targeted closed and open questions to eliminate ambiguity and lock down specifics",
 	prompt,

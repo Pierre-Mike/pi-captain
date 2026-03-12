@@ -69,7 +69,6 @@ export const formatBacklog: Step = {
 	label: "Format Backlog",
 	tools: ["read", "bash"],
 	model: "flash",
-	temperature: 0,
 	description:
 		"Synthesize full hierarchy into a BACKLOG.md living decomposition artifact",
 	prompt,

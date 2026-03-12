@@ -43,7 +43,6 @@ export const reviewPrFile: Step = {
 	kind: "step",
 	label: "Review PR File",
 	tools: ["read", "bash", "grep", "find", "ls"],
-	temperature: 0.3,
 	description:
 		"Review a single changed file for correctness, security, quality — emit inline comments",
 	prompt,

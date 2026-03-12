@@ -104,7 +104,6 @@ export const synthesizeRequirements: Step = {
 	label: "Synthesize Requirements",
 	tools: ["read", "bash", "write"],
 	model: "flash",
-	temperature: 0.3,
 	description:
 		"Produce the final comprehensive requirements document from all gathered intelligence",
 	prompt,

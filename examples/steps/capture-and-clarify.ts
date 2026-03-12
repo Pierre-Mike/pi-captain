@@ -44,7 +44,6 @@ export const captureAndClarify: Step = {
 	label: "Capture and Clarify",
 	tools: ["read", "bash"],
 	model: "sonnet",
-	temperature: 0.3,
 	description: "Transform raw requirement into a structured spec",
 	prompt,
 	onFail: retry(),

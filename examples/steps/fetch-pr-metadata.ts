@@ -80,7 +80,6 @@ export const fetchPrMetadataAuthFailure: Step = {
 	label: "Fetch PR Metadata — Auth Failure Path",
 	tools: ["read"],
 	model: "flash",
-	temperature: 0,
 	description:
 		"Assert that missing/empty GITHUB_TOKEN throws AuthError before any API call is made",
 	prompt: `

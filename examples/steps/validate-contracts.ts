@@ -85,7 +85,6 @@ export const validateContracts: Step = {
 	label: "Validate Contracts",
 	tools: ["read"],
 	model: "flash",
-	temperature: 0,
 	description:
 		"Machine-verifiability gate: typed signature + explicit file + pre-written test + runnable command",
 	prompt,

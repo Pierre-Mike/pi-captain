@@ -4,6 +4,7 @@
 import type { Api, Model } from "@mariozechner/pi-ai";
 import type { DefaultResourceLoader } from "@mariozechner/pi-coding-agent";
 import type { ModelRegistryLike, StepResult } from "../core/types.js";
+import type { WarmSession } from "./session.js";
 
 /** Everything the executor needs from the host environment */
 export interface ExecutorContext {
@@ -27,4 +28,6 @@ export interface ExecutorContext {
 	stepGroup?: string;
 	loaderCache?: Map<string, DefaultResourceLoader>;
 	isGitRepo?: boolean;
+	/** Shared pipeline-level session. Set by executeSequential for compatible steps. */
+	sharedSession?: WarmSession;
 }

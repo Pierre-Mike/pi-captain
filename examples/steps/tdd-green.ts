@@ -43,7 +43,6 @@ export const tddGreen: Step = {
 	kind: "step",
 	label: "TDD Green — Write Implementation",
 	tools: ["read", "write", "edit", "bash", "grep", "find", "ls"],
-	temperature: 0.2,
 	description:
 		"Write the minimal implementation code to make all failing tests pass",
 	prompt,

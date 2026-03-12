@@ -49,7 +49,6 @@ export const tddTaskList: Step = {
 	label: "TDD Task List",
 	tools: ["read", "bash"],
 	model: "sonnet",
-	temperature: 0.2,
 	description:
 		"Apply Kent Beck's Canon TDD task list: each BDD scenario → atomic unit tests → 1 function each",
 	prompt,

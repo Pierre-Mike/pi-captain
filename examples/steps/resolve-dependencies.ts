@@ -58,7 +58,6 @@ export const resolveDependencies: Step = {
 	label: "Resolve Dependencies",
 	tools: ["read", "bash"],
 	model: "flash",
-	temperature: 0,
 	description:
 		"Build adjacency graph, detect cycles, topological sort into parallelizable execution layers",
 	prompt,

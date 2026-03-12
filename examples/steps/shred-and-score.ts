@@ -50,7 +50,6 @@ export const shredAndScore: Step = {
 	label: "Shrink and Score",
 	tools: ["read", "bash"],
 	model: "sonnet",
-	temperature: 0.1,
 	description:
 		"Score complexity and re-split any unit above the Haiku-safe threshold",
 	prompt,
