@@ -4,11 +4,11 @@
 // paths, gate/onFail behaviour, $INPUT/$ORIGINAL interpolation, and transform.
 
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import type { ExecutorContext } from "./core/executor.js";
-import { concat, firstPass } from "./core/merge.js";
-import { skip, warn } from "./gates/on-fail.js";
-import { extract, full } from "./transforms/presets.js";
-import type { Parallel, Pool, Sequential, Step } from "./types.js";
+import { skip, warn } from "../gates/on-fail.js";
+import { extract, full } from "../transforms/presets.js";
+import type { Parallel, Pool, Sequential, Step } from "../types.js";
+import type { ExecutorContext } from "./executor.js";
+import { concat, firstPass } from "./merge.js";
 
 // ── Shared mutable session config ──────────────────────────────────────────
 // All mock sessions read from this object so individual tests can customise
@@ -73,7 +73,7 @@ mock.module("@mariozechner/pi-coding-agent", () => ({
 }));
 
 // Worktree: always return null (no git repo needed)
-mock.module("./infra/worktree.js", () => ({
+mock.module("../infra/worktree.js", () => ({
 	createWorktree: async () => null,
 	removeWorktree: async () => {
 		/* test stub */
@@ -82,7 +82,7 @@ mock.module("./infra/worktree.js", () => ({
 }));
 
 // ── Import executor AFTER mocks are declared ───────────────────────────────
-const { executeRunnable } = await import("./core/executor.js");
+const { executeRunnable } = await import("./executor.js");
 
 // ── Fixtures ───────────────────────────────────────────────────────────────
 
@@ -299,7 +299,7 @@ describe("executeRunnable: sequential", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: seqExecute } = await import("./core/executor.js");
+		const { executeRunnable: seqExecute } = await import("./executor.js");
 		sessionCfg.promptsSeen = [];
 		n = 0;
 
@@ -353,7 +353,7 @@ describe("executeRunnable: sequential", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: seqExecute } = await import("./core/executor.js");
+		const { executeRunnable: seqExecute } = await import("./executor.js");
 
 		const seq: Sequential = {
 			kind: "sequential",
@@ -419,7 +419,7 @@ describe("executeRunnable: sequential", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: seqExecute } = await import("./core/executor.js");
+		const { executeRunnable: seqExecute } = await import("./executor.js");
 		n = 0;
 
 		const seq: Sequential = {
@@ -481,7 +481,7 @@ describe("executeRunnable: sequential", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: seqExecute } = await import("./core/executor.js");
+		const { executeRunnable: seqExecute } = await import("./executor.js");
 
 		const seq: Sequential = {
 			kind: "sequential",
@@ -544,7 +544,7 @@ describe("executeRunnable: sequential", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: seqExecute } = await import("./core/executor.js");
+		const { executeRunnable: seqExecute } = await import("./executor.js");
 
 		const seq: Sequential = {
 			kind: "sequential",
@@ -611,7 +611,7 @@ describe("executeRunnable: parallel", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: parExecute } = await import("./core/executor.js");
+		const { executeRunnable: parExecute } = await import("./executor.js");
 		n = 0;
 
 		const par: Parallel = {
@@ -681,7 +681,7 @@ describe("executeRunnable: parallel", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: parExecute } = await import("./core/executor.js");
+		const { executeRunnable: parExecute } = await import("./executor.js");
 
 		const par: Parallel = {
 			kind: "parallel",
@@ -739,7 +739,7 @@ describe("executeRunnable: parallel", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: parExecute } = await import("./core/executor.js");
+		const { executeRunnable: parExecute } = await import("./executor.js");
 
 		const par: Parallel = {
 			kind: "parallel",
@@ -804,7 +804,7 @@ describe("executeRunnable: pool", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: poolExecute } = await import("./core/executor.js");
+		const { executeRunnable: poolExecute } = await import("./executor.js");
 		n = 0;
 
 		const pool: Pool = {
@@ -872,7 +872,7 @@ describe("executeRunnable: pool", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: poolExecute } = await import("./core/executor.js");
+		const { executeRunnable: poolExecute } = await import("./executor.js");
 
 		const pool: Pool = {
 			kind: "pool",
@@ -934,7 +934,7 @@ describe("executeRunnable: pool", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: poolExecute } = await import("./core/executor.js");
+		const { executeRunnable: poolExecute } = await import("./executor.js");
 
 		const pool: Pool = {
 			kind: "pool",
@@ -996,7 +996,7 @@ describe("executeRunnable: lifecycle callbacks", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: cbExecute } = await import("./core/executor.js");
+		const { executeRunnable: cbExecute } = await import("./executor.js");
 
 		const started: string[] = [];
 		const ended: string[] = [];
@@ -1066,9 +1066,7 @@ describe("executeRunnable: lifecycle callbacks", () => {
 			SettingsManager: { inMemory: () => ({}) },
 		}));
 
-		const { executeRunnable: streamExecute } = await import(
-			"./core/executor.js"
-		);
+		const { executeRunnable: streamExecute } = await import("./executor.js");
 
 		const streamed: string[] = [];
 		const ctx = makeCtx({
