@@ -14,11 +14,13 @@ import type { GateCtx } from "./types.js";
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function makeExec(code = 0, stdout = "", stderr = "") {
-	return mock(async (_cmd: string, _args: string[], _opts?: unknown) => ({
-		code,
-		stdout,
-		stderr,
-	}));
+	return mock(
+		async (_cmd: string, _args: readonly string[], _opts?: unknown) => ({
+			code,
+			stdout,
+			stderr,
+		}),
+	);
 }
 
 function ctx(overrides: Partial<GateCtx> = {}): GateCtx {

@@ -4,15 +4,12 @@
 import { executeParallel } from "./composition/parallel.js";
 import { executePool } from "./composition/pool.js";
 import { executeSequential } from "./composition/sequential.js";
-import {
-	type ExecutorContext,
-	executeStep,
-	type ModelRegistryLike,
-} from "./steps/runner.js";
+import { type ExecutorContext, executeStep } from "./steps/runner.js";
 import type { Runnable, StepResult } from "./types.js";
 
 // Re-export interfaces for public API
-export type { ExecutorContext, ModelRegistryLike };
+export type { ExecutorContext };
+export type { ModelRegistryLike } from "./types.js";
 
 /** Execute any Runnable recursively, returning output text */
 export async function executeRunnable(

@@ -16,6 +16,7 @@
 		"enabled": true,
 		"rules": {
 			"recommended": true,
+
 			"complexity": {
 				"recommended": true,
 				"noExcessiveCognitiveComplexity": "error",
@@ -24,17 +25,20 @@
 				"useDateNow": "error",
 				"useSimplifiedLogicExpression": "error"
 			},
+
 			"correctness": {
 				"recommended": true,
 				"noUnusedFunctionParameters": "error",
 				"noUnusedImports": "error",
 				"noUnusedVariables": "error"
 			},
+
 			"performance": {
 				"recommended": true,
 				"noBarrelFile": "off",
 				"noReExportAll": "off"
 			},
+
 			"style": {
 				"recommended": true,
 				"noNonNullAssertion": "error",
@@ -50,13 +54,17 @@
 				"useAtIndex": "error",
 				"useCollapsedIf": "error",
 				"useConsistentArrowReturn": "error",
-				"noSubstr": "error"
+				"noSubstr": "error",
+				"useConst": "error",
+				"noParameterAssign": "error"
 			},
+
 			"suspicious": {
 				"recommended": true,
 				"noExplicitAny": "error",
 				"noConsole": "off",
-				"useErrorMessage": "error"
+				"useErrorMessage": "error",
+				"noEmptyBlockStatements": "error"
 			}
 		}
 	},

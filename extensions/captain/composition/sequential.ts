@@ -1,6 +1,7 @@
 // ── Sequential Pipeline Execution ─────────────────────────────────────────
 // Steps run one after another, with output of each feeding into the next
 
+import { applyTransform, runContainerGate } from "../shell/execution.js";
 import {
 	type ExecutorContext,
 	executeStep,
@@ -8,7 +9,6 @@ import {
 	type WarmSession,
 } from "../steps/runner.js";
 import type { Runnable, Sequential, StepResult } from "../types.js";
-import { applyTransform, runContainerGate } from "../utils/execution.js";
 
 /**
  * Execute a sequential pipeline with 1-step lookahead prefetch optimization.
@@ -45,7 +45,11 @@ export async function executeSequential(
 	for (let i = 0; i < seq.steps.length; i++) {
 		if (ectx.signal?.aborted) {
 			// Pipeline cancelled — dispose any pending prefetch to avoid leaking sessions.
-			nextPrefetch.then((w) => w?.session.dispose()).catch(() => {});
+			nextPrefetch
+				.then((w) => w?.session.dispose())
+				.catch((_e: unknown) => {
+					/* best-effort dispose — ignore errors */
+				});
 			break;
 		}
 
@@ -74,7 +78,11 @@ export async function executeSequential(
 		const lastResult = results.at(-1);
 		if (lastResult?.status === "failed") {
 			// Step failed — dispose any pending prefetch before bailing.
-			nextPrefetch.then((w) => w?.session.dispose()).catch(() => {});
+			nextPrefetch
+				.then((w) => w?.session.dispose())
+				.catch((_e: unknown) => {
+					/* best-effort dispose — ignore errors */
+				});
 			break;
 		}
 	}

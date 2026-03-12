@@ -1,0 +1,27 @@
+pre-commit:
+  parallel: false
+  commands:
+    biome:
+      glob: "*.{ts,js,json}"
+      run: bunx biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+    typecheck:
+      run: bun run typecheck
+    line-limit:
+      run: |
+        violations=$(find extensions skills -name "*.ts" ! -name "*.test.ts" | xargs wc -l 2>/dev/null | awk '$1 > 200 && $2 != "total"' | grep -v "node_modules" || true)
+        if [ -n "$violations" ]; then
+          echo "❌ Files exceeding 200 lines (split them — Basic_knowledge.md §Single Responsibility):"
+          echo "$violations"
+          exit 1
+        fi
+
+pre-push:
+  parallel: false
+  commands:
+    typecheck:
+      run: bun run typecheck
+    test:
+      run: bun test extensions/
+    audit:
+      run: bun audit || true

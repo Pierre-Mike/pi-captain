@@ -37,14 +37,22 @@ mock.module("@mariozechner/pi-coding-agent", () => ({
 						delta: sessionCfg.output,
 					},
 				});
-				return () => {};
+				return () => {
+					/* unsubscribe noop */
+				};
 			},
 			prompt: async (p: string) => {
 				sessionCfg.promptsSeen.push(p);
 			},
-			abort: () => {},
-			dispose: () => {},
-			setActiveToolsByName: () => {},
+			abort: () => {
+				/* test stub */
+			},
+			dispose: () => {
+				/* test stub */
+			},
+			setActiveToolsByName: () => {
+				/* test stub */
+			},
 		},
 	}),
 	createReadTool: () => ({ name: "read" }),
@@ -56,16 +64,20 @@ mock.module("@mariozechner/pi-coding-agent", () => ({
 	createLsTool: () => ({ name: "ls" }),
 	getAgentDir: () => "/fake/agent-dir",
 	DefaultResourceLoader: class {
-		async reload() {}
+		async reload() {
+			/* test stub */
+		}
 	},
 	SessionManager: { inMemory: () => ({}) },
 	SettingsManager: { inMemory: () => ({}) },
 }));
 
 // Worktree: always return null (no git repo needed)
-mock.module("./worktree.js", () => ({
+mock.module("./infra/worktree.js", () => ({
 	createWorktree: async () => null,
-	removeWorktree: async () => {},
+	removeWorktree: async () => {
+		/* test stub */
+	},
 	isGitRepo: async () => false,
 }));
 
@@ -86,7 +98,7 @@ function makeStep(label: string, prompt = "do $INPUT"): Step {
 
 function makeExec(code = 0, stdout = "", stderr = "") {
 	return mock(
-		async (_cmd: string, _args: string[], _opts?: unknown) =>
+		async (_cmd: string, _args: readonly string[], _opts?: unknown) =>
 			({ code, stdout, stderr }) as {
 				code: number;
 				stdout: string;
@@ -250,15 +262,23 @@ describe("executeRunnable: sequential", () => {
 									delta: out ?? "x",
 								},
 							});
-							return () => {};
+							return () => {
+								/* unsubscribe noop */
+							};
 						},
 						prompt: async (p: string) => {
 							sessionCfg.promptsSeen.push(p);
 						},
-						abort: () => {},
-						dispose: () => {},
+						abort: () => {
+							/* test stub */
+						},
+						dispose: () => {
+							/* test stub */
+						},
 
-						setActiveToolsByName: () => {},
+						setActiveToolsByName: () => {
+							/* test stub */
+						},
 					},
 				};
 			},
@@ -271,7 +291,9 @@ describe("executeRunnable: sequential", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },
@@ -323,7 +345,9 @@ describe("executeRunnable: sequential", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },
@@ -359,13 +383,23 @@ describe("executeRunnable: sequential", () => {
 								delta: `out-${++n}`,
 							},
 						});
-						return () => {};
+						return () => {
+							/* unsubscribe noop */
+						};
 					},
-					prompt: async () => {},
-					abort: () => {},
-					dispose: () => {},
+					prompt: async () => {
+						/* test stub */
+					},
+					abort: () => {
+						/* test stub */
+					},
+					dispose: () => {
+						/* test stub */
+					},
 
-					setActiveToolsByName: () => {},
+					setActiveToolsByName: () => {
+						/* test stub */
+					},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -377,7 +411,9 @@ describe("executeRunnable: sequential", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },
@@ -409,13 +445,23 @@ describe("executeRunnable: sequential", () => {
 								delta: sessionCfg.output,
 							},
 						});
-						return () => {};
+						return () => {
+							/* unsubscribe noop */
+						};
 					},
-					prompt: async () => {},
-					abort: () => {},
-					dispose: () => {},
+					prompt: async () => {
+						/* test stub */
+					},
+					abort: () => {
+						/* test stub */
+					},
+					dispose: () => {
+						/* test stub */
+					},
 
-					setActiveToolsByName: () => {},
+					setActiveToolsByName: () => {
+						/* test stub */
+					},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -427,7 +473,9 @@ describe("executeRunnable: sequential", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },
@@ -460,13 +508,23 @@ describe("executeRunnable: sequential", () => {
 								delta: sessionCfg.output,
 							},
 						});
-						return () => {};
+						return () => {
+							/* unsubscribe noop */
+						};
 					},
-					prompt: async () => {},
-					abort: () => {},
-					dispose: () => {},
+					prompt: async () => {
+						/* test stub */
+					},
+					abort: () => {
+						/* test stub */
+					},
+					dispose: () => {
+						/* test stub */
+					},
 
-					setActiveToolsByName: () => {},
+					setActiveToolsByName: () => {
+						/* test stub */
+					},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -478,7 +536,9 @@ describe("executeRunnable: sequential", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },
@@ -515,13 +575,23 @@ describe("executeRunnable: parallel", () => {
 								delta: `branch-${++n}`,
 							},
 						});
-						return () => {};
+						return () => {
+							/* unsubscribe noop */
+						};
 					},
-					prompt: async () => {},
-					abort: () => {},
-					dispose: () => {},
+					prompt: async () => {
+						/* test stub */
+					},
+					abort: () => {
+						/* test stub */
+					},
+					dispose: () => {
+						/* test stub */
+					},
 
-					setActiveToolsByName: () => {},
+					setActiveToolsByName: () => {
+						/* test stub */
+					},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -533,7 +603,9 @@ describe("executeRunnable: parallel", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },
@@ -573,13 +645,23 @@ describe("executeRunnable: parallel", () => {
 								delta: "branch-result",
 							},
 						});
-						return () => {};
+						return () => {
+							/* unsubscribe noop */
+						};
 					},
-					prompt: async () => {},
-					abort: () => {},
-					dispose: () => {},
+					prompt: async () => {
+						/* test stub */
+					},
+					abort: () => {
+						/* test stub */
+					},
+					dispose: () => {
+						/* test stub */
+					},
 
-					setActiveToolsByName: () => {},
+					setActiveToolsByName: () => {
+						/* test stub */
+					},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -591,7 +673,9 @@ describe("executeRunnable: parallel", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },
@@ -619,15 +703,23 @@ describe("executeRunnable: parallel", () => {
 							type: "message_update",
 							assistantMessageEvent: { type: "text_delta", delta: "ok" },
 						});
-						return () => {};
+						return () => {
+							/* unsubscribe noop */
+						};
 					},
 					prompt: async (p: string) => {
 						prompts.push(p);
 					},
-					abort: () => {},
-					dispose: () => {},
+					abort: () => {
+						/* test stub */
+					},
+					dispose: () => {
+						/* test stub */
+					},
 
-					setActiveToolsByName: () => {},
+					setActiveToolsByName: () => {
+						/* test stub */
+					},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -639,7 +731,9 @@ describe("executeRunnable: parallel", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },
@@ -674,13 +768,23 @@ describe("executeRunnable: pool", () => {
 								delta: `worker-${++n}`,
 							},
 						});
-						return () => {};
+						return () => {
+							/* unsubscribe noop */
+						};
 					},
-					prompt: async () => {},
-					abort: () => {},
-					dispose: () => {},
+					prompt: async () => {
+						/* test stub */
+					},
+					abort: () => {
+						/* test stub */
+					},
+					dispose: () => {
+						/* test stub */
+					},
 
-					setActiveToolsByName: () => {},
+					setActiveToolsByName: () => {
+						/* test stub */
+					},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -692,7 +796,9 @@ describe("executeRunnable: pool", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },
@@ -730,15 +836,23 @@ describe("executeRunnable: pool", () => {
 							type: "message_update",
 							assistantMessageEvent: { type: "text_delta", delta: "done" },
 						});
-						return () => {};
+						return () => {
+							/* unsubscribe noop */
+						};
 					},
 					prompt: async (p: string) => {
 						prompts.push(p);
 					},
-					abort: () => {},
-					dispose: () => {},
+					abort: () => {
+						/* test stub */
+					},
+					dispose: () => {
+						/* test stub */
+					},
 
-					setActiveToolsByName: () => {},
+					setActiveToolsByName: () => {
+						/* test stub */
+					},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -750,7 +864,9 @@ describe("executeRunnable: pool", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },
@@ -782,13 +898,23 @@ describe("executeRunnable: pool", () => {
 								delta: "solo-result",
 							},
 						});
-						return () => {};
+						return () => {
+							/* unsubscribe noop */
+						};
 					},
-					prompt: async () => {},
-					abort: () => {},
-					dispose: () => {},
+					prompt: async () => {
+						/* test stub */
+					},
+					abort: () => {
+						/* test stub */
+					},
+					dispose: () => {
+						/* test stub */
+					},
 
-					setActiveToolsByName: () => {},
+					setActiveToolsByName: () => {
+						/* test stub */
+					},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -800,7 +926,9 @@ describe("executeRunnable: pool", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },
@@ -832,13 +960,23 @@ describe("executeRunnable: lifecycle callbacks", () => {
 							type: "message_update",
 							assistantMessageEvent: { type: "text_delta", delta: "ok" },
 						});
-						return () => {};
+						return () => {
+							/* unsubscribe noop */
+						};
 					},
-					prompt: async () => {},
-					abort: () => {},
-					dispose: () => {},
+					prompt: async () => {
+						/* test stub */
+					},
+					abort: () => {
+						/* test stub */
+					},
+					dispose: () => {
+						/* test stub */
+					},
 
-					setActiveToolsByName: () => {},
+					setActiveToolsByName: () => {
+						/* test stub */
+					},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -850,7 +988,9 @@ describe("executeRunnable: lifecycle callbacks", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },
@@ -890,13 +1030,23 @@ describe("executeRunnable: lifecycle callbacks", () => {
 							type: "message_update",
 							assistantMessageEvent: { type: "text_delta", delta: "world" },
 						});
-						return () => {};
+						return () => {
+							/* unsubscribe noop */
+						};
 					},
-					prompt: async () => {},
-					abort: () => {},
-					dispose: () => {},
+					prompt: async () => {
+						/* test stub */
+					},
+					abort: () => {
+						/* test stub */
+					},
+					dispose: () => {
+						/* test stub */
+					},
 
-					setActiveToolsByName: () => {},
+					setActiveToolsByName: () => {
+						/* test stub */
+					},
 				},
 			}),
 			createReadTool: () => ({ name: "read" }),
@@ -908,7 +1058,9 @@ describe("executeRunnable: lifecycle callbacks", () => {
 			createLsTool: () => ({ name: "ls" }),
 			getAgentDir: () => "/fake/agent-dir",
 			DefaultResourceLoader: class {
-				async reload() {}
+				async reload() {
+					/* test stub */
+				}
 			},
 			SessionManager: { inMemory: () => ({}) },
 			SettingsManager: { inMemory: () => ({}) },

@@ -1,30 +1,38 @@
 // ── Captain: Pipeline Orchestration Types ──────────────────────────────────
 
+// Re-use the concrete model type from the pi-ai peer dep — it is already
+// declared as a peer dependency so importing it here is safe.
+export type { ModelRegistryLike } from "./core/utils/model.js";
+
 /**
  * Side-effect helpers available to gates that need shell, UI, or LLM access.
  * Simple gates that only inspect output can ignore this entirely.
  */
 export interface GateCtx {
 	/** Working directory for shell commands */
-	cwd: string;
-	signal?: AbortSignal;
+	readonly cwd: string;
+	readonly signal?: AbortSignal;
 	/** Run a shell command — resolves with exit code + stdout/stderr */
-	exec: (
+	readonly exec: (
 		cmd: string,
-		args: string[],
+		args: readonly string[],
 		opts?: { signal?: AbortSignal },
-	) => Promise<{ stdout: string; stderr: string; code: number }>;
+	) => Promise<{
+		readonly stdout: string;
+		readonly stderr: string;
+		readonly code: number;
+	}>;
 	/** Show a confirm dialog (only available in interactive sessions) */
-	confirm?: (title: string, body: string) => Promise<boolean>;
-	hasUI: boolean;
+	readonly confirm?: (title: string, body: string) => Promise<boolean>;
+	readonly hasUI: boolean;
 	/** Current LLM model (used by llm/llmFast/llmStrict gates) */
-	// biome-ignore lint/suspicious/noExplicitAny: model type varies by provider
-	model?: any;
-	apiKey?: string;
-	// biome-ignore lint/suspicious/noExplicitAny: registry type lives in executor
-	modelRegistry?: any;
+	readonly model?: import("@mariozechner/pi-ai").Model<
+		import("@mariozechner/pi-ai").Api
+	>;
+	readonly apiKey?: string;
+	readonly modelRegistry?: import("./core/utils/model.js").ModelRegistryLike;
 	/** Names of tools that were actually called during the step (e.g. ["bash", "web_search"]) */
-	toolsUsed?: string[];
+	readonly toolsUsed?: readonly string[];
 }
 
 /**
@@ -33,8 +41,8 @@ export interface GateCtx {
  * Async gates are allowed. Throwing is also treated as a failure.
  */
 export type Gate = (params: {
-	output: string;
-	ctx?: GateCtx;
+	readonly output: string;
+	readonly ctx?: GateCtx;
 }) => true | string | Promise<true | string>;
 
 /**
@@ -42,13 +50,13 @@ export type Gate = (params: {
  */
 export interface OnFailCtx {
 	/** The gate failure reason */
-	reason: string;
+	readonly reason: string;
 	/** How many retries have already been attempted (0 on first failure) */
-	retryCount: number;
+	readonly retryCount: number;
 	/** Total number of times the step has run so far (retryCount + 1) */
-	stepCount: number;
+	readonly stepCount: number;
 	/** The last output produced before the failure */
-	output: string;
+	readonly output: string;
 }
 
 /**
@@ -61,28 +69,16 @@ export interface OnFailCtx {
  * - `fallback` — run an alternative Step instead
  */
 export type OnFailResult =
-	| { action: "retry" }
-	| { action: "fail" }
-	| { action: "skip" }
-	| { action: "warn" }
-	| { action: "fallback"; step: Step };
+	| { readonly action: "retry" }
+	| { readonly action: "fail" }
+	| { readonly action: "skip" }
+	| { readonly action: "warn" }
+	| { readonly action: "fallback"; readonly step: Step };
 
 /**
  * Failure handling strategy — a pure function that receives failure context
  * and returns what to do next. All behaviour (retry limits, delays) lives
  * inside the function; the executor only acts on the returned decision.
- *
- * @example
- * // Built-in presets
- * onFail: retry()                                         // up to 3 times, then fail
- * onFail: retry(2)                                        // up to 2 times, then fail
- * onFail: retryWithDelay(3, 2000)                         // delay is awaited inside the fn
- * onFail: fallback(myStep)
- * onFail: skip
- * onFail: warn
- *
- * // Custom inline — full control via ctx
- * onFail: ({ retryCount }) => retryCount < 2 ? { action: "retry" } : { action: "warn" }
  */
 export type OnFail = (ctx: OnFailCtx) => OnFailResult | Promise<OnFailResult>;
 
@@ -94,165 +90,85 @@ export type TransformCtx = GateCtx;
 
 /**
  * A transform is a plain function that maps one step's output to the next step's input.
- * It receives the raw output, the original pipeline input, and a side-effect context.
- *
- * Use the built-in presets from `transforms/presets.ts` for common cases:
- * @example
- * import { full, extract, summarize } from "./transforms/presets.js";
- *
- * transform: full                        // pass output unchanged
- * transform: extract("items")            // pull a JSON key
- * transform: summarize()                 // LLM summary
- *
- * // Or write inline for full control:
- * transform: ({ output }) => output.trim()
- * transform: async ({ output, ctx }) => {
- *   const { stdout } = await ctx.exec("jq", ["-r", ".data"], {});
- *   return stdout || output;
- * }
  */
 export type Transform = (params: {
 	/** The raw output produced by the step */
-	output: string;
+	readonly output: string;
 	/** The very first input to the whole pipeline ($ORIGINAL) */
-	original: string;
+	readonly original: string;
 	/** Side-effect helpers (shell, confirm, LLM model, …) */
-	ctx: TransformCtx;
+	readonly ctx: TransformCtx;
 }) => string | Promise<string>;
 
 /**
  * A merge function combines multiple branch outputs into one.
- * Use the built-in presets from `merge.ts` for common cases:
- * @example
- * import { concat, rank, vote, firstPass, awaitAll } from "./merge.js";
- *
- * merge: concat      // join with separators (default)
- * merge: rank        // LLM ranks and synthesizes best parts
- * merge: vote        // LLM picks consensus answer
- * merge: firstPass   // return first non-empty output
- *
- * // Or write inline:
- * merge: (outputs) => outputs.join("\n\n")
  */
 export type MergeFn = (
-	outputs: string[],
+	outputs: readonly string[],
 	ctx: import("./merge.js").MergeCtx,
 ) => string | Promise<string>;
 
 // ── Composition Types (infinitely nestable) ────────────────────────────────
 
 /**
- * Model identifier passed to `--model`. Accepts known shorthand aliases
- * (resolved via partial match in the model registry) or any full model ID.
- *
- * @example
- * model: "sonnet"   // claude-sonnet-*
- * model: "flash"    // gemini-flash-* or similar
- * model: "haiku"    // claude-haiku-*
- * model: "opus"     // claude-opus-*
+ * Model identifier — known shorthands or any full model ID.
  */
 export type ModelId = "sonnet" | "flash" | "haiku" | "opus" | (string & {});
 
 /** Atomic unit — a single `pi --print` invocation */
 export interface Step {
-	kind: "step";
-	label: string;
+	readonly kind: "step";
+	readonly label: string;
 
-	// ── Step config ───────────────────────────────────────────────────────
-	/** Model identifier (e.g. "sonnet", "flash"). Passed as --model. */
-	model?: ModelId;
-	/** Tool names to enable. Passed as --tools read,bash,edit. */
-	tools?: string[];
-	/** Temperature for the LLM call. */
-	temperature?: number;
-	/** System prompt text. Passed as --system-prompt. */
-	systemPrompt?: string;
-	/** Skill file paths. Each passed as --skill <path>. */
-	skills?: string[];
-	/** Extension file paths. Each passed as --extension <path>. */
-	extensions?: string[];
-	/** If true, pass --mode json to get structured JSON output. */
-	jsonOutput?: boolean;
+	readonly model?: ModelId;
+	readonly tools?: readonly string[];
+	readonly temperature?: number;
+	readonly systemPrompt?: string;
+	readonly skills?: readonly string[];
+	readonly extensions?: readonly string[];
+	readonly jsonOutput?: boolean;
+	readonly description?: string;
+	readonly prompt: string;
 
-	description?: string;
-	prompt: string; // supports $INPUT, $ORIGINAL interpolation
-
-	// Note: to limit step execution, configure model-level or pipeline-level controls.
-	// maxTurns / maxTokens were removed — they were declared but never enforced,
-	// which was misleading to users. Add back when the SDK supports them natively.
-
-	gate?: Gate;
-	onFail?: OnFail;
-	transform?: Transform;
+	readonly gate?: Gate;
+	readonly onFail?: OnFail;
+	readonly transform?: Transform;
 }
 
 /** Sequential — run in order, output chains via $INPUT */
 export interface Sequential {
-	kind: "sequential";
-	steps: Runnable[];
-	gate?: Gate; // validates final output of the sequence
-	onFail?: OnFail; // retry = re-run entire sequence from scratch
-	transform?: Transform; // applied to final output after gate passes
+	readonly kind: "sequential";
+	readonly steps: readonly Runnable[];
+	readonly gate?: Gate;
+	readonly onFail?: OnFail;
+	readonly transform?: Transform;
 }
 
-/** Pool — replicate ONE runnable N times with different inputs */
+/** Pool — replicate ONE runnable N times */
 export interface Pool {
-	kind: "pool";
-	step: Runnable;
-	count: number;
-	merge: MergeFn;
-	gate?: Gate; // validates merged output
-	onFail?: OnFail; // retry = re-run all N branches + re-merge
-	transform?: Transform; // applied to merged output after gate passes
+	readonly kind: "pool";
+	readonly step: Runnable;
+	readonly count: number;
+	readonly merge: MergeFn;
+	readonly gate?: Gate;
+	readonly onFail?: OnFail;
+	readonly transform?: Transform;
 }
 
 /** Parallel — run DIFFERENT runnables concurrently */
 export interface Parallel {
-	kind: "parallel";
-	steps: Runnable[];
-	merge: MergeFn;
-	gate?: Gate; // validates merged output
-	onFail?: OnFail; // retry = re-run all branches + re-merge
-	transform?: Transform; // applied to merged output after gate passes
+	readonly kind: "parallel";
+	readonly steps: readonly Runnable[];
+	readonly merge: MergeFn;
+	readonly gate?: Gate;
+	readonly onFail?: OnFail;
+	readonly transform?: Transform;
 }
 
 /** Union type — any composable unit */
 export type Runnable = Step | Sequential | Pool | Parallel;
 
 // ── Runtime State ──────────────────────────────────────────────────────────
-
-export type StepStatus =
-	| "pending"
-	| "running"
-	| "passed"
-	| "failed"
-	| "skipped";
-
-export interface StepResult {
-	label: string;
-	status: StepStatus;
-	output: string;
-	gateResult?: { passed: boolean; reason: string };
-	error?: string;
-	elapsed: number; // ms
-	group?: string; // parallel/pool group label this step belongs to
-	toolCount?: number; // number of tools available to this step
-	toolCallCount?: number; // number of tool calls actually made during this step
-	model?: string; // resolved model ID used for this step
-}
-
-export interface PipelineState {
-	name: string;
-	spec: Runnable;
-	status: "idle" | "running" | "completed" | "failed";
-	results: StepResult[];
-	/** Labels of all steps currently executing (supports concurrent parallel/pool steps) */
-	currentSteps: Set<string>;
-	/** Accumulated stream text keyed by step label */
-	currentStepStreams: Map<string, string>;
-	/** Live tool-call count keyed by step label (incremented on each tool_execution_end) */
-	currentStepToolCalls: Map<string, number>;
-	startTime?: number;
-	endTime?: number;
-	finalOutput?: string;
-}
+// Mutable execution state lives in runtime-state.ts (kept separate to stay
+// within the 200-line limit per file).
+export type { PipelineState, StepResult, StepStatus } from "./runtime-state.js";

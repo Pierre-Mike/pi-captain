@@ -22,11 +22,19 @@ mock.module("@mariozechner/pi-coding-agent", () => ({
 					type: "message_update",
 					assistantMessageEvent: { type: "text_delta", delta: "mock output" },
 				});
-				return () => {};
+				return () => {
+					/* unsubscribe noop */
+				};
 			},
-			prompt: async () => {},
-			abort: () => {},
-			dispose: () => {},
+			prompt: async () => {
+				/* test stub */
+			},
+			abort: () => {
+				/* test stub */
+			},
+			dispose: () => {
+				/* test stub */
+			},
 		},
 	}),
 	createReadTool: () => ({ name: "read" }),
@@ -38,7 +46,9 @@ mock.module("@mariozechner/pi-coding-agent", () => ({
 	createLsTool: () => ({ name: "ls" }),
 	getAgentDir: () => "/fake/agent-dir",
 	DefaultResourceLoader: class {
-		async reload() {}
+		async reload() {
+			/* test stub */
+		}
 	},
 	SessionManager: { inMemory: () => ({}) },
 	SettingsManager: { inMemory: () => ({}) },
@@ -49,9 +59,11 @@ mock.module("@mariozechner/pi-coding-agent", () => ({
 	}),
 }));
 
-mock.module("../worktree.js", () => ({
+mock.module("../infra/worktree.js", () => ({
 	createWorktree: async () => null,
-	removeWorktree: async () => {},
+	removeWorktree: async () => {
+		/* test stub */
+	},
 	isGitRepo: async () => false,
 }));
 
@@ -134,8 +146,12 @@ function makeCtx(
 		if (inputThrows) throw inputThrows;
 		return inputReturn;
 	});
-	const notifyMock = mock((_msg: string, _level: string) => {});
-	const setStatusMock = mock((_key: string, _val: string | undefined) => {});
+	const notifyMock = mock((_msg: string, _level: string) => {
+		/* test stub */
+	});
+	const setStatusMock = mock((_key: string, _val: string | undefined) => {
+		/* test stub */
+	});
 
 	return {
 		ctx: {
@@ -207,8 +223,12 @@ describe('captain_run tool: name="" + hasUI=false', () => {
 	test('returns isError:true with "not found" message — no UI calls', async () => {
 		const state = makeMinimalState({ loadedPipelines: {} });
 		const { pi, getTool } = makePI();
-		const updateWidget = mock(() => {});
-		const clearWidget = mock(() => {});
+		const updateWidget = mock(() => {
+			/* noop */
+		});
+		const clearWidget = mock(() => {
+			/* noop */
+		});
 		registerRunTool(pi as never, state, updateWidget, clearWidget);
 
 		const { ctx, selectMock, inputMock } = makeCtx({ hasUI: false });
@@ -232,8 +252,12 @@ describe('captain_run tool: name="" + hasUI=false', () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx } = makeCtx({ hasUI: false });
@@ -258,8 +282,12 @@ describe('captain_run tool: name="" + hasUI=true + no pipelines available', () =
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, selectMock } = makeCtx({ hasUI: true });
@@ -274,8 +302,12 @@ describe('captain_run tool: name="" + hasUI=true + no pipelines available', () =
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx } = makeCtx({ hasUI: true });
@@ -303,8 +335,12 @@ describe('captain_run tool: name="" + hasUI=true, user cancels select', () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, selectMock } = makeCtx({
@@ -324,8 +360,12 @@ describe('captain_run tool: name="" + hasUI=true, user cancels select', () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, selectMock } = makeCtx({
@@ -348,8 +388,12 @@ describe('captain_run tool: name="" + hasUI=true, user cancels select', () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx } = makeCtx({ hasUI: true, selectReturn: undefined });
@@ -372,8 +416,12 @@ describe('captain_run tool: name="" + hasUI=true, user cancels select', () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, inputMock } = makeCtx({
@@ -397,8 +445,12 @@ describe('captain_run tool: name="" + hasUI=true, user cancels input dialog', ()
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, inputMock } = makeCtx({
@@ -419,8 +471,12 @@ describe('captain_run tool: name="" + hasUI=true, user cancels input dialog', ()
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx } = makeCtx({
@@ -452,8 +508,12 @@ describe('captain_run tool: name="" + hasUI=true + input pre-supplied', () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, inputMock } = makeCtx({
@@ -484,8 +544,12 @@ describe("captain_run tool: name already provided → no UI shown", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, selectMock } = makeCtx({ hasUI: true });
@@ -508,8 +572,12 @@ describe("captain_run tool: name already provided → no UI shown", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, inputMock } = makeCtx({ hasUI: true });
@@ -538,8 +606,12 @@ describe("captain_run tool: auto-load builtin preset on selection", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx } = makeCtx({
@@ -563,8 +635,12 @@ describe("captain_run tool: auto-load builtin preset on selection", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, selectMock } = makeCtx({
@@ -589,8 +665,12 @@ describe("captain_run tool: error handling when UI methods throw", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx } = makeCtx({
@@ -616,8 +696,12 @@ describe("captain_run tool: error handling when UI methods throw", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx } = makeCtx({
@@ -656,8 +740,12 @@ describe("captain_run tool: error handling when UI methods throw", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx } = makeCtx({
@@ -690,8 +778,12 @@ describe("captain_run tool: aborted signal handling", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, selectMock } = makeCtx({ hasUI: true });
@@ -720,8 +812,12 @@ describe("captain_run tool: renderCall with undefined name", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		expect(() => {
@@ -735,8 +831,12 @@ describe("captain_run tool: renderCall with undefined name", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const rendered = getTool().renderCall(
@@ -755,8 +855,12 @@ describe("captain_run tool: renderCall with undefined name", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		expect(() => {
@@ -783,8 +887,12 @@ describe("captain_run tool: select options include loaded pipelines then builtin
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, selectMock } = makeCtx({
@@ -808,8 +916,12 @@ describe("captain_run tool: select options include loaded pipelines then builtin
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, selectMock } = makeCtx({
@@ -834,8 +946,12 @@ describe("captain_run tool: name=undefined treated like name=''", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx, selectMock } = makeCtx({
@@ -859,8 +975,12 @@ describe("captain_run tool: name=undefined treated like name=''", () => {
 		registerRunTool(
 			pi as never,
 			state,
-			mock(() => {}),
-			mock(() => {}),
+			mock(() => {
+				/* noop */
+			}),
+			mock(() => {
+				/* noop */
+			}),
 		);
 
 		const { ctx } = makeCtx({ hasUI: false });

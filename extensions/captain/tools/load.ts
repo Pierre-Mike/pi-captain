@@ -1,8 +1,8 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
+import { describeRunnable } from "../core/utils/index.js";
 import type { CaptainState } from "../state.js";
-import { describeRunnable } from "../utils/index.js";
 import { text } from "./helpers.js";
 
 // ── Helpers extracted to keep execute() complexity low ────────────────────
