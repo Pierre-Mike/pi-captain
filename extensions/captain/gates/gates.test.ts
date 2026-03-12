@@ -1,4 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
+import type { GateCtx } from "../types.js";
 import {
 	allOf,
 	bunTest,
@@ -8,8 +9,7 @@ import {
 	regexCI,
 	runGate,
 	user,
-} from "./gates/index.js";
-import type { GateCtx } from "./types.js";
+} from "./index.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 

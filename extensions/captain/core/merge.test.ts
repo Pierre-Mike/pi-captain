@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { MergeCtx } from "./core/merge.js";
-import { awaitAll, concat, firstPass, rank, vote } from "./core/merge.js";
+import type { MergeCtx } from "./merge.js";
+import { awaitAll, concat, firstPass, rank, vote } from "./merge.js";
 
 // A fake MergeCtx — only needed for vote/rank (LLM strategies)
 function makeMctx(): MergeCtx {

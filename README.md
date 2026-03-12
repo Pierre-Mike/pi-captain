@@ -1,5 +1,8 @@
 # pi-captain
 
+![Lines](https://img.shields.io/badge/lines-60.84%25-yellow)
+![Branches](https://img.shields.io/badge/branches-62.57%25-yellow)
+
 > ⚠️ **This is not production ready — just an experimentation.**
 
 Pipeline orchestrator for [pi](https://github.com/badlogic/pi-mono). Wire steps into sequential/parallel/pool pipelines with quality gates and run complex workflows — each step declares its own model, tools, and temperature inline.
@@ -24,7 +27,9 @@ pi install git:github.com/Pierre-Mike/pi-captain
 | `captain_run` | Execute a pipeline with input |
 | `captain_status` | Check pipeline progress, tokens, cost, and gate results |
 | `captain_list` | List all defined pipelines |
-| `captain_metrics` | Query per-step telemetry: tokens, cost, latency across all runs |
+| `captain_define` | Define a pipeline from a JSON spec (the Runnable tree) |
+| `captain_generate` | Generate a TypeScript pipeline file on-the-fly using LLM |
+| `captain_validate` | Validate a pipeline specification for structural correctness |
 
 ### Builtin Pipeline Presets
 
