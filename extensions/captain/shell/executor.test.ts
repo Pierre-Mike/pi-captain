@@ -1079,3 +1079,166 @@ describe("executeRunnable: lifecycle callbacks", () => {
 		expect(streamed).toContain("hello world");
 	});
 });
+
+// ── Worktree cwd isolation ─────────────────────────────────────────────────
+// When createWorktree succeeds, every session and every tool created inside
+// that branch MUST use the worktree path — never the caller's original cwd.
+
+describe("worktree cwd isolation", () => {
+	function makeWorktreeMock(sessionCwds: string[], writeCwds: string[]) {
+		mock.module("@mariozechner/pi-coding-agent", () => ({
+			createAgentSession: async (opts: { cwd?: string }) => {
+				sessionCwds.push(opts?.cwd ?? "(none)");
+				return {
+					session: {
+						subscribe: (fn: (e: unknown) => void) => {
+							fn({
+								type: "message_update",
+								assistantMessageEvent: { type: "text_delta", delta: "ok" },
+							});
+							return () => {
+								/* unsubscribe noop */
+							};
+						},
+						prompt: async () => {
+							/* test stub */
+						},
+						abort: () => {
+							/* test stub */
+						},
+						dispose: () => {
+							/* test stub */
+						},
+						setActiveToolsByName: () => {
+							/* test stub */
+						},
+					},
+				};
+			},
+			createReadTool: () => ({ name: "read" }),
+			createBashTool: () => ({ name: "bash" }),
+			createEditTool: () => ({ name: "edit" }),
+			createWriteTool: (cwd: string) => {
+				writeCwds.push(cwd);
+				return { name: "write" };
+			},
+			createGrepTool: () => ({ name: "grep" }),
+			createFindTool: () => ({ name: "find" }),
+			createLsTool: () => ({ name: "ls" }),
+			getAgentDir: () => "/fake/agent-dir",
+			DefaultResourceLoader: class {
+				async reload() {
+					/* test stub */
+				}
+			},
+			SessionManager: { inMemory: () => ({}) },
+			SettingsManager: { inMemory: () => ({}) },
+		}));
+
+		mock.module("../infra/worktree.js", () => ({
+			isGitRepo: async () => true,
+			createWorktree: async (
+				_exec: unknown,
+				_cwd: string,
+				_name: string,
+				_label: string,
+				i: number,
+			) => ({
+				worktreePath: `/fake-worktrees/branch-${i}`,
+				branchName: `captain/branch-${i}`,
+			}),
+			removeWorktree: async () => {
+				/* test stub */
+			},
+			commitWorktreeChanges: async () => false,
+		}));
+	}
+
+	test("parallel: createAgentSession receives worktree cwd, not main cwd", async () => {
+		const sessionCwds: string[] = [];
+		const writeCwds: string[] = [];
+		makeWorktreeMock(sessionCwds, writeCwds);
+
+		const { executeRunnable: parExec } = await import("./executor.js");
+
+		const par: Parallel = {
+			kind: "parallel",
+			steps: [makeStep("a"), makeStep("b")],
+			merge: concat,
+		};
+
+		await parExec(par, "input", "orig", makeCtx({ cwd: "/main" }));
+
+		// Each branch must use its own worktree cwd
+		expect(sessionCwds).toHaveLength(2);
+		expect(sessionCwds.every((c) => c.startsWith("/fake-worktrees/"))).toBe(
+			true,
+		);
+		// The main cwd must never appear
+		expect(sessionCwds.includes("/main")).toBe(false);
+	});
+
+	test("parallel: write tool is created with worktree cwd, not main cwd", async () => {
+		const sessionCwds: string[] = [];
+		const writeCwds: string[] = [];
+		makeWorktreeMock(sessionCwds, writeCwds);
+
+		const { executeRunnable: parExec } = await import("./executor.js");
+
+		const par: Parallel = {
+			kind: "parallel",
+			steps: [makeStep("a"), makeStep("b")],
+			merge: concat,
+		};
+
+		await parExec(par, "input", "orig", makeCtx({ cwd: "/main" }));
+
+		expect(writeCwds).toHaveLength(2);
+		expect(writeCwds.every((c) => c.startsWith("/fake-worktrees/"))).toBe(true);
+		expect(writeCwds.includes("/main")).toBe(false);
+	});
+
+	test("pool: createAgentSession receives worktree cwd, not main cwd", async () => {
+		const sessionCwds: string[] = [];
+		const writeCwds: string[] = [];
+		makeWorktreeMock(sessionCwds, writeCwds);
+
+		const { executeRunnable: poolExec } = await import("./executor.js");
+
+		const pool: Pool = {
+			kind: "pool",
+			step: makeStep("worker"),
+			count: 2,
+			merge: concat,
+		};
+
+		await poolExec(pool, "task", "orig", makeCtx({ cwd: "/main" }));
+
+		expect(sessionCwds).toHaveLength(2);
+		expect(sessionCwds.every((c) => c.startsWith("/fake-worktrees/"))).toBe(
+			true,
+		);
+		expect(sessionCwds.includes("/main")).toBe(false);
+	});
+
+	test("pool: write tool is created with worktree cwd, not main cwd", async () => {
+		const sessionCwds: string[] = [];
+		const writeCwds: string[] = [];
+		makeWorktreeMock(sessionCwds, writeCwds);
+
+		const { executeRunnable: poolExec } = await import("./executor.js");
+
+		const pool: Pool = {
+			kind: "pool",
+			step: makeStep("worker"),
+			count: 2,
+			merge: concat,
+		};
+
+		await poolExec(pool, "task", "orig", makeCtx({ cwd: "/main" }));
+
+		expect(writeCwds).toHaveLength(2);
+		expect(writeCwds.every((c) => c.startsWith("/fake-worktrees/"))).toBe(true);
+		expect(writeCwds.includes("/main")).toBe(false);
+	});
+});

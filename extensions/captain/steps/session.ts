@@ -66,6 +66,18 @@ export function resolveTools(
 }
 
 /**
+ * Injected into every captain step session.
+ * Parallel and pool steps run inside isolated git worktrees, so absolute paths
+ * would escape the worktree and land on the main branch — use relative paths only.
+ */
+const RELATIVE_PATHS_INSTRUCTION =
+	"IMPORTANT: Always use relative paths for every file operation " +
+	"(read, write, edit, bash). Never write to absolute paths. " +
+	"Relative paths resolve to the current working directory shown above, " +
+	"which is an isolated workspace — writing to absolute paths would " +
+	"bypass isolation and modify files outside your workspace.";
+
+/**
  * Build (or reuse from cache) a DefaultResourceLoader for the given config.
  * Steps with identical configs share one loader to avoid redundant disk scans.
  */
@@ -92,6 +104,7 @@ export async function getOrCreateLoader(
 		cwd: ectx.cwd,
 		agentDir,
 		...(systemPrompt && { systemPrompt }),
+		appendSystemPrompt: RELATIVE_PATHS_INSTRUCTION,
 		...((extensions?.length ?? 0) > 0 && {
 			additionalExtensionPaths: [...(extensions ?? [])],
 		}),

@@ -7,7 +7,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
-import { buildPrompt, type LoopState } from "./loop-state.js";
+import { buildPrompt, type LoopState } from "./state.js";
 
 export function handleLoopControlTool(
 	params: { status: "next" | "done"; summary: string; reason?: string },

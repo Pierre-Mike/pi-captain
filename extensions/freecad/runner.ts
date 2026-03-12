@@ -1,4 +1,4 @@
-// freecad-runner.ts — Shell runner for the FreeCAD agent
+// runner.ts — Shell runner for the FreeCAD agent
 
 import { execFile } from "node:child_process";
 import * as path from "node:path";
@@ -8,7 +8,7 @@ const execFileAsync = promisify(execFile);
 
 export const RUNNER = path.join(
 	path.dirname(new URL(import.meta.url).pathname),
-	"../skills/freecad/freecad_run.sh",
+	"../../skills/freecad/freecad_run.sh",
 );
 
 const ANSI_RE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");

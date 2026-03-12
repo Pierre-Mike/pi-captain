@@ -11,7 +11,7 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { allFreecadTools } from "./freecad-tools.js";
+import { allFreecadTools } from "./tools.js";
 
 export default function freecadExtension(pi: ExtensionAPI) {
 	// Register all FreeCAD tools

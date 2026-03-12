@@ -63,6 +63,7 @@ export const pipeline: Runnable = { kind: "pool", step: solveStep, count: 3, mer
 6. Keep pipelines focused — 3–7 steps is ideal.
 7. Do NOT invent imports. Only use what is listed above.
 8. Do NOT add any text outside the TypeScript file.
+9. In step prompts for parallel/pool branches, always include an explicit instruction to use only relative paths for all file operations (read, write, edit, bash). Parallel and pool steps run in isolated git worktrees and must never write to absolute paths.
 
 ## User's Goal
 ${userGoal}`;

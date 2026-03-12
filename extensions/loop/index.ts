@@ -1,4 +1,4 @@
-// loop.ts — General-purpose agent loop extension
+// index.ts — General-purpose agent loop extension
 // Supports 3 modes:
 //   /loop goal <description>     — repeat until the LLM declares the goal met
 //   /loop passes <N> <task>      — repeat exactly N times
@@ -22,13 +22,13 @@ import {
 	parsePassesArgs,
 	parsePipelineArgs,
 	updateWidget,
-} from "./loop-state.js";
+} from "./state.js";
 import {
 	getLoopControlToolDefinition,
 	handleLoopControlTool,
 	renderLoopControlCall,
 	renderLoopControlResult,
-} from "./loop-tool.js";
+} from "./tool.js";
 
 export default function (pi: ExtensionAPI) {
 	let state = emptyState();

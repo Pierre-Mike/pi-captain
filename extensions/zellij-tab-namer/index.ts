@@ -19,7 +19,7 @@ import {
 	type SessionEntry,
 	scheduleRename,
 	undoRenameZellijTab,
-} from "./zellij-helpers";
+} from "./helpers";
 
 const isInZellij = (): boolean => process.env.ZELLIJ !== undefined;
 

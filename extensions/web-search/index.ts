@@ -16,11 +16,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
-import {
-	runWebSearch,
-	SEARCH_MODEL_ID,
-	type SearchResult,
-} from "./web-search-fetch.js";
+import { runWebSearch, SEARCH_MODEL_ID, type SearchResult } from "./fetch.js";
 
 export default function webSearchExtension(pi: ExtensionAPI): void {
 	pi.registerTool({

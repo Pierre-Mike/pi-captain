@@ -4,7 +4,7 @@
 
 import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { runAgent } from "./freecad-runner.js";
+import { runAgent } from "./runner.js";
 
 const PromptParams = Type.Object({
 	prompt: Type.String({
