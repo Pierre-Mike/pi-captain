@@ -24,7 +24,9 @@ pi install git:github.com/Pierre-Mike/pi-captain
 | `captain_run` | Execute a pipeline with input |
 | `captain_status` | Check pipeline progress, tokens, cost, and gate results |
 | `captain_list` | List all defined pipelines |
-| `captain_metrics` | Query per-step telemetry: tokens, cost, latency across all runs |
+| `captain_define` | Define a pipeline from a JSON spec (the Runnable tree) |
+| `captain_generate` | Generate a TypeScript pipeline file on-the-fly using LLM |
+| `captain_validate` | Validate a pipeline specification for structural correctness |
 
 ### Builtin Pipeline Presets
 
