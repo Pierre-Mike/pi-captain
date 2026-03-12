@@ -1,9 +1,30 @@
 import { describe, expect, test } from "bun:test";
+import type { Runnable } from "../core/types.js";
+import type { CaptainState } from "../state.js";
 import {
 	buildAdHocStep,
+	ensurePipelineLoaded,
+	parseCaptainRunArgs,
 	parseInlineFlags,
 	parseStepFlag,
 } from "./commands-parse.js";
+
+// ── Mock state helpers ────────────────────────────────────────────────────
+
+function makeState(
+	pipelines: Record<string, { spec: Runnable }> = {},
+	resolveResult?: { name: string; spec: Runnable } | undefined,
+	resolveThrows?: Error,
+): CaptainState {
+	return {
+		pipelines,
+		resolvePreset: resolveThrows
+			? () => {
+					throw resolveThrows;
+				}
+			: () => Promise.resolve(resolveResult),
+	} as unknown as CaptainState;
+}
 
 // ── parseStepFlag ─────────────────────────────────────────────────────────
 
@@ -95,5 +116,146 @@ describe("buildAdHocStep", () => {
 		expect(typeof s.onFail).toBe("function");
 		expect(typeof s.transform).toBe("function");
 		expect(s.gate).toBeUndefined();
+	});
+});
+
+// ── ensurePipelineLoaded ──────────────────────────────────────────────────
+
+describe("ensurePipelineLoaded", () => {
+	test("returns true immediately when pipeline already in state", async () => {
+		const spec: Runnable = { kind: "step", label: "x", prompt: "y" };
+		const state = makeState({ "my-pipe": { spec } });
+		const msgs: string[] = [];
+		const result = await ensurePipelineLoaded("my-pipe", "/cwd", state, (m) =>
+			msgs.push(m),
+		);
+		expect(result).toBe(true);
+		expect(msgs).toHaveLength(0);
+	});
+
+	test("loads and returns true when resolvePreset succeeds", async () => {
+		const spec: Runnable = { kind: "step", label: "x", prompt: "y" };
+		const state = makeState({}, { name: "my-pipe", spec });
+		const msgs: string[] = [];
+		const result = await ensurePipelineLoaded("my-pipe", "/cwd", state, (m) =>
+			msgs.push(m),
+		);
+		expect(result).toBe(true);
+		expect(msgs[0]).toContain("Auto-loaded");
+	});
+
+	test("returns false and notifies when resolvePreset returns undefined", async () => {
+		const state = makeState({}, undefined);
+		const errors: string[] = [];
+		const result = await ensurePipelineLoaded(
+			"missing",
+			"/cwd",
+			state,
+			(m, lvl) => {
+				if (lvl === "error") errors.push(m);
+			},
+		);
+		expect(result).toBe(false);
+		expect(errors[0]).toContain("missing");
+	});
+
+	test("returns false and notifies when resolvePreset throws", async () => {
+		const state = makeState({}, undefined, new Error("disk error"));
+		const errors: string[] = [];
+		const result = await ensurePipelineLoaded(
+			"broken",
+			"/cwd",
+			state,
+			(m, lvl) => {
+				if (lvl === "error") errors.push(m);
+			},
+		);
+		expect(result).toBe(false);
+		expect(errors[0]).toContain("disk error");
+	});
+});
+
+// ── parseCaptainRunArgs ───────────────────────────────────────────────────
+
+describe("parseCaptainRunArgs", () => {
+	const step: Runnable = { kind: "step", label: "Research", prompt: "do it" };
+
+	test("returns null and notifies when name is missing", async () => {
+		const state = makeState();
+		const errors: string[] = [];
+		const result = await parseCaptainRunArgs("", state, "/cwd", (m, lvl) => {
+			if (lvl === "error") errors.push(m);
+		});
+		expect(result).toBeNull();
+		expect(errors[0]).toContain("Usage");
+	});
+
+	test("returns null and notifies when input is missing", async () => {
+		const state = makeState({ "my-pipe": { spec: step } });
+		const errors: string[] = [];
+		const result = await parseCaptainRunArgs(
+			"my-pipe",
+			state,
+			"/cwd",
+			(m, lvl) => {
+				if (lvl === "error") errors.push(m);
+			},
+		);
+		expect(result).toBeNull();
+		expect(errors[0]).toContain("Usage");
+	});
+
+	test("returns parsed result for valid name and input", async () => {
+		const state = makeState({ "my-pipe": { spec: step } });
+		const result = await parseCaptainRunArgs(
+			"my-pipe hello world",
+			state,
+			"/cwd",
+			() => {
+				/* noop */
+			},
+		);
+		expect(result).not.toBeNull();
+		expect(result?.name).toBe("my-pipe");
+		expect(result?.input).toBe("hello world");
+		expect(result?.stepFilter).toBeUndefined();
+	});
+
+	test("extracts --step filter and resolves matching step", async () => {
+		const state = makeState({ "my-pipe": { spec: step } });
+		const result = await parseCaptainRunArgs(
+			"my-pipe --step Research hello",
+			state,
+			"/cwd",
+			() => {
+				/* noop */
+			},
+		);
+		expect(result?.stepFilter).toBe("Research");
+		expect(result?.specToRun).toBe(step);
+	});
+
+	test("returns null and notifies when --step label not found", async () => {
+		const state = makeState({ "my-pipe": { spec: step } });
+		const errors: string[] = [];
+		const result = await parseCaptainRunArgs(
+			"my-pipe --step Unknown hello",
+			state,
+			"/cwd",
+			(m, lvl) => {
+				if (lvl === "error") errors.push(m);
+			},
+		);
+		expect(result).toBeNull();
+		expect(errors[0]).toContain("Unknown");
+	});
+
+	test("lists loaded pipelines in the usage message when no name given and pipelines exist", async () => {
+		const state = makeState({ "pipe-a": { spec: step } });
+		const infos: string[] = [];
+		await parseCaptainRunArgs("", state, "/cwd", (m, lvl) => {
+			if (lvl === "info") infos.push(m);
+		});
+		expect(infos[0]).toContain("pipe-a");
 	});
 });

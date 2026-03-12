@@ -11,14 +11,16 @@ const ALIAS_BRACKETS = `"<captain>/`;
 const ALIAS_NO_BRACKETS = `"captain/`;
 
 /** Replace captain alias imports in source with the absolute captainDir path. */
-function resolveAliases(raw: string, captainDir: string): string {
+export function resolveAliases(raw: string, captainDir: string): string {
 	return raw
 		.replaceAll(ALIAS_BRACKETS, `"${captainDir}/`)
 		.replaceAll(ALIAS_NO_BRACKETS, `"${captainDir}/`);
 }
 
 /** Extract the `pipeline` export from a dynamically imported module. */
-function extractPipeline(mod: Record<string, unknown>): Runnable | undefined {
+export function extractPipeline(
+	mod: Record<string, unknown>,
+): Runnable | undefined {
 	const direct = (mod as Record<string, { pipeline?: Runnable } & Runnable>)
 		.pipeline;
 	if (direct && typeof direct === "object" && "kind" in direct)

@@ -43,9 +43,9 @@ export function llmFast(prompt: string, threshold = 0.7): Gate {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-const MAX_OUTPUT = 8000;
+export const MAX_OUTPUT = 8000;
 
-function buildPrompt(criteria: string, output: string): string {
+export function buildPrompt(criteria: string, output: string): string {
 	const truncated = output.slice(0, MAX_OUTPUT);
 	return [
 		"You are a quality gate evaluator. Determine whether the output meets the criteria.",
@@ -62,13 +62,13 @@ function buildPrompt(criteria: string, output: string): string {
 	].join("\n");
 }
 
-interface Judgment {
+export interface Judgment {
 	pass: boolean;
 	confidence: number;
 	reason: string;
 }
 
-function parseJudgment(text: string): Judgment {
+export function parseJudgment(text: string): Judgment {
 	const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
 	const raw = (jsonMatch ? (jsonMatch[1] ?? text) : text).trim();
 	try {

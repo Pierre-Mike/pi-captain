@@ -35,6 +35,14 @@ pre-push:
     typecheck:
       run: bun run typecheck
     test:
-      run: bun test extensions/
+      run: |
+        OUTPUT=$(bun test --coverage extensions/ 2>&1)
+        echo "$OUTPUT"
+        LINES=$(echo "$OUTPUT" | grep "All files" | awk -F'|' '{gsub(/ /,"",$2); print $2}' | tr -d '%')
+        if [ -n "$LINES" ] && [ "${LINES%%.*}" -lt 80 ]; then
+          echo "❌ Line coverage ${LINES}% is below the 80% threshold (Basic_knowledge.md §TDD)"
+          exit 1
+        fi
+        echo "✅ Coverage ${LINES}% meets the 80% threshold"
     audit:
       run: bun audit || true
