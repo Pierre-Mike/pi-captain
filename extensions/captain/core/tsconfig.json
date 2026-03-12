@@ -3,7 +3,7 @@
 	"extends": "../../../tsconfig.base.json",
 	"compilerOptions": {
 		"composite": true,
-		"outDir": ".tsbuild"
+		"outDir": "../../../.tsbuild/core"
 	},
 	"include": ["./**/*.ts"],
 	"references": []

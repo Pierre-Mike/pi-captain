@@ -1,7 +1,7 @@
 {
 	"$comment": "FC/IS enforcement — shell is the coordinator: references core, infra, gates, steps.",
 	"extends": "../../../tsconfig.base.json",
-	"compilerOptions": { "composite": true, "outDir": ".tsbuild" },
+	"compilerOptions": { "composite": true, "outDir": "../../../.tsbuild/shell" },
 	"include": ["./**/*.ts"],
 	"references": [
 		{ "path": "../core" },

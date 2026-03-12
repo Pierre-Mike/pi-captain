@@ -1,6 +1,6 @@
 {
 	"extends": "../../../tsconfig.base.json",
-	"compilerOptions": { "composite": true, "outDir": ".tsbuild" },
+	"compilerOptions": { "composite": true, "outDir": "../../../.tsbuild/gates" },
 	"include": ["./**/*.ts"],
 	"references": [{ "path": "../core" }]
 }

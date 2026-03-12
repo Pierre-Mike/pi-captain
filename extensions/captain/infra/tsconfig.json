@@ -3,7 +3,7 @@
 	"extends": "../../../tsconfig.base.json",
 	"compilerOptions": {
 		"composite": true,
-		"outDir": ".tsbuild"
+		"outDir": "../../../.tsbuild/infra"
 	},
 	"include": ["./**/*.ts"],
 	"references": [{ "path": "../core" }]
