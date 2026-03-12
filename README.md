@@ -1,5 +1,8 @@
 # pi-captain
 
+![Lines](https://img.shields.io/badge/lines-60.84%25-yellow)
+![Branches](https://img.shields.io/badge/branches-62.57%25-yellow)
+
 > ⚠️ **This is not production ready — just an experimentation.**
 
 Pipeline orchestrator for [pi](https://github.com/badlogic/pi-mono). Wire steps into sequential/parallel/pool pipelines with quality gates and run complex workflows — each step declares its own model, tools, and temperature inline.
