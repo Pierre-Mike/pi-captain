@@ -56,7 +56,7 @@ async function selectAndAutoLoad(
 			result: {
 				content: [
 					text(
-						"No pipelines available. Use captain_define or captain_load first.",
+						"No pipelines available. Use captain_generate or captain_load first.",
 					),
 				],
 				details: undefined,
@@ -91,7 +91,7 @@ async function resolveNameInteractively(
 	if (signal?.aborted) return cancelled();
 	if (!ctx.hasUI)
 		return guardError(
-			'Error: pipeline "" not found. Define it first with captain_define.',
+			'Error: pipeline "" not found. Generate one with captain_generate or load a preset with captain_load.',
 		);
 
 	const selected = await selectAndAutoLoad(state, ctx);

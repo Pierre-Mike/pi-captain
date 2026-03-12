@@ -19,7 +19,7 @@ export function registerListTool(pi: ExtensionAPI, state: CaptainState) {
 					content: [
 						{
 							type: "text",
-							text: "No pipelines defined or available. Use captain_define to create one.",
+							text: "No pipelines defined or available. Use captain_generate to create one, or captain_load to load a preset.",
 						},
 					],
 					details: undefined,

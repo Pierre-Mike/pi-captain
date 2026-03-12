@@ -65,7 +65,6 @@ pi install git:github.com/Pierre-Mike/pi-captain
 | `captain_run` | Execute a pipeline with an input string |
 | `captain_status` | View step-by-step results, tokens, cost, and gate outcomes |
 | `captain_list` | List all currently defined pipelines |
-| `captain_define` | Define a pipeline from a raw JSON spec |
 | `captain_generate` | Generate a new `.ts` pipeline file using LLM from a goal description |
 | `captain_validate` | Validate a pipeline spec for structural correctness |
 
@@ -626,7 +625,7 @@ captain/
 │   └── presets.ts        ← full, extract, summarize
 │
 ├── tools/                ← captain_load, captain_run, captain_status, captain_list,
-│   │                        captain_define, captain_generate, captain_validate
+│   │                        captain_generate, captain_validate
 │
 └── steps/                ← Pre-built step library (fetch-pr-*, review-pr-*, tdd-*, …)
 ```

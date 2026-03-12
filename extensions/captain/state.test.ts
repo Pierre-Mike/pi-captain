@@ -101,13 +101,13 @@ describe("CaptainState: discoverPresets", () => {
 		expect(results.map((r) => r.name)).toEqual(["my-pipe"]);
 	});
 
-	test("returns .json files", () => {
+	test("ignores .json files (only .ts pipelines are supported)", () => {
 		const dir = join("/cwd", ".pi", "pipelines");
 		const fs = makeFakeFs({ [`${dir}/pipeline.json`]: "" });
 		fs.dirs.add(dir);
 		const state = new CaptainState("/captain", fs);
 		const results = state.discoverPresets("/cwd");
-		expect(results.map((r) => r.name)).toEqual(["pipeline"]);
+		expect(results).toEqual([]);
 	});
 
 	test("includes source path", () => {
@@ -117,41 +117,6 @@ describe("CaptainState: discoverPresets", () => {
 		const state = new CaptainState("/captain", fs);
 		const [result] = state.discoverPresets("/cwd");
 		expect(result.source).toBe(join(dir, "p.ts"));
-	});
-});
-
-// ── loadPipelineFile ──────────────────────────────────────────────────────
-
-describe("CaptainState: loadPipelineFile", () => {
-	test("parses and registers a valid JSON pipeline", () => {
-		const pipeline = { kind: "step", label: "x", prompt: "y" };
-		const filePath = "/cwd/.pi/pipelines/my-pipe.json";
-		const fs = makeFakeFs({
-			[filePath]: JSON.stringify({ pipeline }),
-		});
-		const state = new CaptainState("/captain", fs);
-		const result = state.loadPipelineFile(filePath);
-		expect(result.name).toBe("my-pipe");
-		expect(result.spec.kind).toBe("step");
-		expect(state.pipelines["my-pipe"]).toBeDefined();
-	});
-
-	test("throws when pipeline field is missing", () => {
-		const filePath = "/p.json";
-		const fs = makeFakeFs({ [filePath]: JSON.stringify({ other: "data" }) });
-		const state = new CaptainState("/captain", fs);
-		expect(() => state.loadPipelineFile(filePath)).toThrow(
-			"Invalid pipeline file",
-		);
-	});
-
-	test("throws when pipeline.kind is missing", () => {
-		const filePath = "/p.json";
-		const fs = makeFakeFs({
-			[filePath]: JSON.stringify({ pipeline: { label: "x" } }),
-		});
-		const state = new CaptainState("/captain", fs);
-		expect(() => state.loadPipelineFile(filePath)).toThrow();
 	});
 });
 

@@ -7,7 +7,6 @@ import {
 	buildContractContent,
 	pipelineNamesFromFiles,
 } from "./core/contract.js";
-import { deserializeRunnable } from "./core/deserialize.js";
 import type { FsPort } from "./core/ports.js";
 import type { PipelineState, Runnable } from "./core/types.js";
 import { describeRunnable } from "./core/utils/index.js";
@@ -57,30 +56,11 @@ export class CaptainState {
 
 		const userFiles = this.fs.listFiles(piPipelinesDir);
 		return userFiles
-			.filter(
-				(f) => f !== "captain.ts" && (f.endsWith(".ts") || f.endsWith(".json")),
-			)
+			.filter((f) => f !== "captain.ts" && f.endsWith(".ts"))
 			.map((f) => ({
-				name: basename(f, f.endsWith(".ts") ? ".ts" : ".json"),
+				name: basename(f, ".ts"),
 				source: join(piPipelinesDir, f),
 			}));
-	}
-
-	loadPipelineFile(filePath: string): { name: string; spec: Runnable } {
-		// read (infra)
-		const raw = this.fs.readText(filePath);
-		// compute (core)
-		const data = JSON.parse(raw) as { pipeline: Runnable };
-		if (!data.pipeline?.kind) {
-			throw new Error(
-				"Invalid pipeline file: missing 'pipeline' with 'kind' field",
-			);
-		}
-		const name = basename(filePath, ".json");
-		const spec = deserializeRunnable(data.pipeline);
-		// write state (shell)
-		this.pipelines[name] = { spec };
-		return { name, spec };
 	}
 
 	loadTsPipelineFile(
@@ -97,10 +77,7 @@ export class CaptainState {
 	resolvePreset(
 		name: string,
 		cwd: string,
-	):
-		| Promise<{ name: string; spec: Runnable; source?: string }>
-		| { name: string; spec: Runnable; source?: string }
-		| undefined {
+	): Promise<{ name: string; spec: Runnable; source?: string }> | undefined {
 		// Resolve by explicit file path
 		const candidate = resolve(cwd, name);
 		let filePath = this.fs.exists(candidate)
@@ -112,21 +89,13 @@ export class CaptainState {
 		// Auto-discover from .pi/pipelines/
 		if (!filePath) {
 			const piDir = join(cwd, ".pi", "pipelines");
-			for (const ext of [".ts", ".json"]) {
-				const p = join(piDir, `${name}${ext}`);
-				if (this.fs.exists(p)) {
-					filePath = p;
-					break;
-				}
-			}
+			const p = join(piDir, `${name}.ts`);
+			if (this.fs.exists(p)) filePath = p;
 		}
 
 		if (!filePath) return undefined;
 
-		if (filePath.endsWith(".ts") || filePath.endsWith(".js")) {
-			return this.loadTsPipelineFile(filePath);
-		}
-		return { ...this.loadPipelineFile(filePath), source: filePath };
+		return this.loadTsPipelineFile(filePath);
 	}
 
 	// ── Pipeline List Helpers ─────────────────────────────────────────────

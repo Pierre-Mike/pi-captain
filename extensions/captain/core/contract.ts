@@ -20,8 +20,6 @@ export function pipelineNamesFromFiles(
 	fileNames: readonly string[],
 ): readonly string[] {
 	return fileNames
-		.filter(
-			(f) => f !== "captain.ts" && (f.endsWith(".ts") || f.endsWith(".json")),
-		)
-		.map((f) => (f.endsWith(".ts") ? f.slice(0, -3) : f.slice(0, -5)));
+		.filter((f) => f !== "captain.ts" && f.endsWith(".ts"))
+		.map((f) => f.slice(0, -3));
 }

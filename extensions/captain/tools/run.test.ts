@@ -229,7 +229,7 @@ describe('captain_run tool: name="" + hasUI=false', () => {
 		expect(inputMock).not.toHaveBeenCalled();
 	});
 
-	test("returns isError:true message mentioning captain_define", async () => {
+	test("returns isError:true message mentioning captain_generate", async () => {
 		const state = makeMinimalState();
 		const { pi, getTool } = makePI();
 		registerRunTool(
@@ -252,7 +252,7 @@ describe('captain_run tool: name="" + hasUI=false', () => {
 			ctx,
 		)) as { content: Array<{ text: string }> };
 
-		expect(result.content[0].text).toMatch(/captain_define/i);
+		expect(result.content[0].text).toMatch(/captain_generate/i);
 	});
 });
 

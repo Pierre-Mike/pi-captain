@@ -35,10 +35,8 @@ describe("pipelineNamesFromFiles", () => {
 		expect(pipelineNamesFromFiles(["my-pipeline.ts"])).toEqual(["my-pipeline"]);
 	});
 
-	test("strips .json extension", () => {
-		expect(pipelineNamesFromFiles(["my-pipeline.json"])).toEqual([
-			"my-pipeline",
-		]);
+	test("ignores .json files (only .ts pipelines are supported)", () => {
+		expect(pipelineNamesFromFiles(["my-pipeline.json"])).toEqual([]);
 	});
 
 	test("filters out captain.ts", () => {
@@ -49,10 +47,9 @@ describe("pipelineNamesFromFiles", () => {
 		expect(pipelineNamesFromFiles(["readme.md", "foo.ts"])).toEqual(["foo"]);
 	});
 
-	test("handles mixed .ts and .json files", () => {
+	test("handles mixed .ts and .json files (json ignored)", () => {
 		expect(pipelineNamesFromFiles(["a.ts", "b.json", "c.ts"])).toEqual([
 			"a",
-			"b",
 			"c",
 		]);
 	});
