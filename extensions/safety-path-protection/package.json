@@ -1,0 +1,17 @@
+{
+	"name": "pi-safety-path-protection",
+	"version": "0.1.1",
+	"description": "Protects sensitive paths (.env files, .git internals, node_modules, SSH keys) from unauthorized reads and writes across all tools — read, write, edit, and bash.",
+	"keywords": [
+		"pi-package"
+	],
+	"license": "MIT",
+	"pi": {
+		"extensions": [
+			"."
+		]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-coding-agent": "*"
+	}
+}

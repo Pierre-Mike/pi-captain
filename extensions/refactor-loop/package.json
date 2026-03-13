@@ -1,0 +1,20 @@
+{
+	"name": "pi-refactor-loop",
+	"version": "0.1.1",
+	"description": "Iterative refactoring pipeline for pi. Runs analyze → refactor → verify cycles with a TUI progress widget, git commit-and-push per pass, and a bundled SKILL.md guide.",
+	"keywords": [
+		"pi-package"
+	],
+	"license": "MIT",
+	"pi": {
+		"extensions": [
+			"."
+		],
+		"skills": [
+			"./refactor-loop"
+		]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-coding-agent": "*"
+	}
+}

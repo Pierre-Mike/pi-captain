@@ -1,5 +1,4 @@
-// ── ui/commands-register-a.ts — /captain /captain-run /captain-load ─────────
-// Extracted from commands.ts (Basic_knowledge.md ≤200 lines rule).
+// ── ui/commands-register-a.ts — /captain ─────────────────────────────────────
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { PipelineState } from "../core/types.js";
 import type { CaptainState } from "../state.js";
@@ -8,7 +7,10 @@ import {
 	runRunnableFromCommand,
 	showPipelineDetails,
 } from "./commands-exec.js";
-import { parseCaptainRunArgs } from "./commands-parse.js";
+import {
+	ensurePipelineLoaded,
+	parsePipelineAndInput,
+} from "./commands-parse.js";
 import { updateWidget } from "./widget.js";
 
 export function registerCommandsA(pi: ExtensionAPI, state: CaptainState): void {
@@ -32,39 +34,37 @@ export function registerCommandsA(pi: ExtensionAPI, state: CaptainState): void {
 				}));
 		},
 		handler: async (args, ctx) => {
-			const name = args?.trim();
-			if (!name) {
+			const raw = args?.trim() ?? "";
+			if (!raw) {
+				// No args → interactive launcher (pick pipeline + enter input)
 				await runInteractivePipelineLauncher(pi, state, ctx);
-			} else {
-				await showPipelineDetails(name, state, ctx);
+				return;
 			}
-		},
-	});
 
-	// /captain-agents — list all available agents
-	// /captain-run — run a pipeline or single step
-	pi.registerCommand("captain-run", {
-		description:
-			"Run a pipeline directly: /captain-run <name> [--step <label>] <input>",
-		getArgumentCompletions: (prefix) =>
-			Object.keys(state.pipelines)
-				.filter((n) => n.startsWith(prefix))
-				.map((n) => ({ value: n, label: n })),
-		handler: async (args, ctx) => {
-			const parsed = await parseCaptainRunArgs(
-				args,
-				state,
+			const { pipeline, input } = parsePipelineAndInput(raw);
+
+			if (!input) {
+				// Only a name/path provided → show details
+				await showPipelineDetails(pipeline, state, ctx);
+				return;
+			}
+
+			// Both pipeline and input provided → load (if needed) and run immediately
+			const notify = (msg: string, level: "info" | "error") =>
+				ctx.ui.notify(msg, level);
+
+			const resolvedName = await ensurePipelineLoaded(
+				pipeline,
 				ctx.cwd,
-				(msg, level) => ctx.ui.notify(msg, level),
+				state,
+				notify,
 			);
-			if (!parsed) return;
-			const { name, input, stepFilter, specToRun } = parsed;
-			if (stepFilter)
-				ctx.ui.notify(`Running single step: "${stepFilter}"`, "info");
-			const stateName = stepFilter ? `${name}/${stepFilter}` : name;
+			if (!resolvedName) return;
+
+			const spec = state.pipelines[resolvedName].spec;
 			const pipelineState: PipelineState = {
-				name: stateName,
-				spec: specToRun,
+				name: resolvedName,
+				spec,
 				status: "running",
 				results: [],
 				currentSteps: new Set(),
@@ -74,63 +74,7 @@ export function registerCommandsA(pi: ExtensionAPI, state: CaptainState): void {
 			};
 			state.runningState = pipelineState;
 			updateWidget(ctx, pipelineState);
-			await runRunnableFromCommand(
-				pi,
-				specToRun,
-				input,
-				pipelineState,
-				state,
-				ctx,
-			);
-		},
-	});
-
-	// /captain-load — load a preset pipeline
-	pi.registerCommand("captain-load", {
-		description:
-			"Load a pipeline preset or file (/captain-load <name|path>). No args to list available presets.",
-		getArgumentCompletions: (prefix) => {
-			const presets = state.discoverPresets(process.cwd());
-			return presets
-				.filter((p) => p.name.startsWith(prefix))
-				.map((p) => ({ value: p.name, label: `${p.name} (${p.source})` }));
-		},
-		handler: async (args, ctx) => {
-			const name = args?.trim();
-			if (!name) {
-				const presets = state.discoverPresets(ctx.cwd);
-				if (presets.length === 0) {
-					ctx.ui.notify(
-						"No pipeline presets found. Place .ts/.json files in .pi/pipelines/ or provide a file path.",
-						"info",
-					);
-					return;
-				}
-				ctx.ui.notify(
-					`Available presets:\n${presets.map((p) => `• ${p.name} (${p.source})`).join("\n")}`,
-					"info",
-				);
-				return;
-			}
-			try {
-				const result = await state.resolvePreset(name, ctx.cwd);
-				if (!result) {
-					ctx.ui.notify(
-						`Preset or file "${name}" not found. Run /captain-load to see available presets, or provide a valid file path.`,
-						"error",
-					);
-					return;
-				}
-				ctx.ui.notify(
-					`✓ Loaded "${result.name}"${result.source ? ` from ${result.source}` : ""}\nRun with: /captain-run ${result.name} <input>`,
-					"info",
-				);
-			} catch (err) {
-				ctx.ui.notify(
-					`Failed to load: ${err instanceof Error ? err.message : String(err)}`,
-					"error",
-				);
-			}
+			await runRunnableFromCommand(pi, spec, input, pipelineState, state, ctx);
 		},
 	});
 }

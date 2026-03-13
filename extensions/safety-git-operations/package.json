@@ -1,0 +1,17 @@
+{
+	"name": "pi-safety-git-operations",
+	"version": "0.1.1",
+	"description": "Guards destructive git and GitHub/GitLab CLI operations with severity-based confirmation dialogs and session memory. Covers force-push, reset --hard, branch deletion, gh/glab repo operations, and more.",
+	"keywords": [
+		"pi-package"
+	],
+	"license": "MIT",
+	"pi": {
+		"extensions": [
+			"."
+		]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-coding-agent": "*"
+	}
+}

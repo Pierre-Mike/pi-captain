@@ -118,7 +118,7 @@ export async function runInteractivePipelineLauncher(
 
 	if (allNames.length === 0) {
 		ctx.ui.notify(
-			"No pipelines defined or available. Use /captain-load to load a preset.",
+			"No pipelines defined or available. Place .ts files in .pi/pipelines/ or pass a file path to /captain.",
 			"info",
 		);
 		return;

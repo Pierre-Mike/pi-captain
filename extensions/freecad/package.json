@@ -1,0 +1,20 @@
+{
+	"name": "pi-freecad",
+	"version": "0.1.1",
+	"description": "Drive FreeCAD from pi with natural language. Create 3D shapes, open and modify .FCStd files, export to STEP/IGES/STL/DXF, and batch-convert entire folders.",
+	"keywords": [
+		"pi-package"
+	],
+	"license": "MIT",
+	"pi": {
+		"extensions": [
+			"."
+		],
+		"skills": [
+			"./skill"
+		]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-coding-agent": "*"
+	}
+}

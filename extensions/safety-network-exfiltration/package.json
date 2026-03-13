@@ -1,0 +1,17 @@
+{
+	"name": "pi-safety-network-exfiltration",
+	"version": "0.1.1",
+	"description": "Blocks data exfiltration, remote code execution via piped downloads, secrets embedded in commands, and unauthorized network operations before they run.",
+	"keywords": [
+		"pi-package"
+	],
+	"license": "MIT",
+	"pi": {
+		"extensions": [
+			"."
+		]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-coding-agent": "*"
+	}
+}

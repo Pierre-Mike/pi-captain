@@ -1,0 +1,17 @@
+{
+	"name": "pi-clear",
+	"version": "0.1.1",
+	"description": "Adds /clear and /c commands (plus bare message interception) to wipe the conversation context and start a fresh session with a runtime reload.",
+	"keywords": [
+		"pi-package"
+	],
+	"license": "MIT",
+	"pi": {
+		"extensions": [
+			"."
+		]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-coding-agent": "*"
+	}
+}

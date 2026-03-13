@@ -1,13 +1,38 @@
 // ── ui/commands-parse.ts — Parsing helpers for slash commands ───────────────
 // Extracted from commands.ts to stay within 200-line limit (Basic_knowledge.md).
 
-import type { Runnable, Step } from "../core/types.js";
-import { collectStepLabels, findStepByLabel } from "../core/utils/index.js";
+import type { Step } from "../core/types.js";
 import { skip } from "../gates/on-fail.js";
 import type { CaptainState } from "../state.js";
 import { full } from "../transforms/presets.js";
 
 type NotifyFn = (msg: string, level: "info" | "error") => void;
+
+/**
+ * Parse `/captain <pipeline> <input>` where each token may be single-quoted,
+ * double-quoted, or an unquoted word.  The pipeline token is the first token;
+ * everything after it (including any surrounding quotes) is joined as the input.
+ *
+ * Examples:
+ *   '/path/to/pipe.ts' 'hello world'   → { pipeline: "/path/to/pipe.ts", input: "hello world" }
+ *   my-preset do something              → { pipeline: "my-preset",         input: "do something" }
+ *   'my preset'                         → { pipeline: "my preset",          input: "" }
+ */
+export function parsePipelineAndInput(raw: string): {
+	pipeline: string;
+	input: string;
+} {
+	const tokens: string[] = [];
+	const re = /(['"])(.*?)\1|(\S+)/gs;
+	let m: RegExpExecArray | null;
+	// biome-ignore lint/suspicious/noAssignInExpressions: idiomatic while loop
+	while ((m = re.exec(raw)) !== null) {
+		tokens.push(m[2] !== undefined ? m[2] : m[3]);
+	}
+	if (tokens.length === 0) return { pipeline: "", input: "" };
+	const [pipeline, ...rest] = tokens;
+	return { pipeline, input: rest.join(" ") };
+}
 
 /** Parse --step flag out of raw args string; return { stepFilter, cleanedArgs } */
 export function parseStepFlag(raw: string): {
@@ -60,88 +85,35 @@ export function buildAdHocStep(
 	};
 }
 
-/** Ensure a named pipeline is loaded (auto-loads from presets). Returns false if the caller should abort. */
+/**
+ * Ensure a named pipeline is loaded (auto-loads from presets).
+ * Returns the resolved pipeline name (may differ from the input when a file
+ * path is given — the stored key is always basename without extension).
+ * Returns undefined if loading failed.
+ */
 export async function ensurePipelineLoaded(
 	name: string,
 	cwd: string,
 	state: CaptainState,
 	notify: NotifyFn,
-): Promise<boolean> {
-	if (state.pipelines[name]) return true;
+): Promise<string | undefined> {
+	if (state.pipelines[name]) return name;
 	try {
 		const resolved = await state.resolvePreset(name, cwd);
 		if (!resolved) {
 			notify(
-				`Pipeline "${name}" not found. Use /captain-load to see available presets.`,
+				`Pipeline "${name}" not found. Place .ts files in .pi/pipelines/ or pass a valid file path.`,
 				"error",
 			);
-			return false;
+			return undefined;
 		}
-		notify(`Auto-loaded preset "${name}"`, "info");
-		return true;
+		notify(`Auto-loaded "${resolved.name}"`, "info");
+		return resolved.name;
 	} catch (err) {
 		notify(
 			`Failed to load pipeline "${name}": ${err instanceof Error ? err.message : String(err)}`,
 			"error",
 		);
-		return false;
+		return undefined;
 	}
-}
-
-/** Parse and validate args for /captain-run; returns null if the handler should abort */
-export async function parseCaptainRunArgs(
-	args: string,
-	state: CaptainState,
-	cwd: string,
-	notify: NotifyFn,
-): Promise<{
-	name: string;
-	input: string;
-	stepFilter: string | undefined;
-	specToRun: Runnable;
-} | null> {
-	const raw = args?.trim() ?? "";
-	const { stepFilter, cleanedArgs } = parseStepFlag(raw);
-	const parts = cleanedArgs.split(/\s+/);
-	const name = parts[0];
-	const input = parts.slice(1).join(" ");
-
-	if (!name) {
-		const loadedNames = Object.keys(state.pipelines);
-		if (loadedNames.length === 0) {
-			notify(
-				"Usage: /captain-run <name> [--step <label>] <input>\nNo pipelines loaded. Use /captain-load first.",
-				"error",
-			);
-		} else {
-			notify(
-				`Usage: /captain-run <name> [--step <label>] <input>\n\nLoaded pipelines:\n${loadedNames.map((n: string) => `  • ${n}`).join("\n")}`,
-				"info",
-			);
-		}
-		return null;
-	}
-	if (!input) {
-		notify(
-			`Usage: /captain-run ${name} [--step <label>] <input>\nProvide an input string after the pipeline name.`,
-			"error",
-		);
-		return null;
-	}
-	if (!(await ensurePipelineLoaded(name, cwd, state, notify))) return null;
-
-	let specToRun: Runnable | undefined = state.pipelines[name].spec;
-	if (stepFilter) {
-		specToRun = findStepByLabel(specToRun, stepFilter);
-		if (!specToRun) {
-			const labels = collectStepLabels(state.pipelines[name].spec);
-			notify(
-				`Step "${stepFilter}" not found in pipeline "${name}".\n\nAvailable steps:\n${labels.map((l) => `  • ${l}`).join("\n")}`,
-				"error",
-			);
-			return null;
-		}
-	}
-
-	return { name, input, stepFilter, specToRun };
 }

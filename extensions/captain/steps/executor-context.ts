@@ -24,6 +24,24 @@ export interface ExecutorContext {
 	onStepEnd?: (result: StepResult) => void;
 	onStepStream?: (label: string, text: string) => void;
 	onStepToolCall?: (label: string, totalCalls: number) => void;
+	/** Called just before each tool invocation across all steps (pipeline-wide). */
+	onToolCallStart?: (ctx: {
+		readonly label: string;
+		readonly input: string;
+		readonly original: string;
+		readonly toolName: string;
+		readonly toolInput?: unknown;
+	}) => void | Promise<void>;
+	/** Called right after each tool invocation across all steps (pipeline-wide). */
+	onToolCallEnd?: (ctx: {
+		readonly label: string;
+		readonly input: string;
+		readonly original: string;
+		readonly toolName: string;
+		readonly toolInput?: unknown;
+		readonly output: unknown;
+		readonly isError: boolean;
+	}) => void | Promise<void>;
 	pipelineName: string;
 	stepGroup?: string;
 	loaderCache?: Map<string, DefaultResourceLoader>;

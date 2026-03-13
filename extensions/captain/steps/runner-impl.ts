@@ -1,23 +1,15 @@
-// ── steps/runner-impl.ts — Private runPrompt & handleFailure helpers ────────
-// Extracted from runner.ts to stay within the 200-line limit (Basic_knowledge.md).
+// ── steps/runner-impl.ts — runPrompt helper ──────────────────────────────
+// handleFailure lives in failure-handler.ts to stay within 200 lines.
 import { appendFileSync } from "node:fs";
-import type { GateCtx, Step } from "../core/types.js";
-import { type GateResult, runGate } from "../gates/index.js";
+import type { Step } from "../core/types.js";
 import type { ExecutorContext } from "./executor-context.js";
 import type { AgentSession } from "./session.js";
 
-const MAX_EXECUTOR_RETRIES = 10;
+export { handleFailure } from "./failure-handler.js";
 
 export const _captainDebug = (msg: string) => {
 	if (process.env.CAPTAIN_DEBUG) appendFileSync("/tmp/captain-debug.log", msg);
 };
-
-type ExecuteStepFn = (
-	step: Step,
-	input: string,
-	original: string,
-	ectx: ExecutorContext,
-) => Promise<{ output: string }>;
 
 // ── Core prompt execution ─────────────────────────────────────────────────
 
@@ -27,6 +19,8 @@ export async function runPrompt(
 	step: Step,
 	ectx: ExecutorContext,
 	disposeAfter = true,
+	stepInput = "",
+	original = "",
 ): Promise<{ output: string; toolCallCount: number }> {
 	const toolNames = step.tools ?? ["read", "bash", "edit", "write"];
 	session.setActiveToolsByName([...toolNames]);
@@ -50,9 +44,29 @@ export async function runPrompt(
 			ectx.onStepStream?.(step.label, output);
 		} else if (event.type === "tool_execution_start") {
 			ectx.onStepStream?.(step.label, output || `[calling ${event.toolName}…]`);
+			const toolStartCtx = {
+				label: step.label,
+				input: stepInput,
+				original,
+				toolName: event.toolName as string,
+				toolInput: event.toolInput as unknown,
+			};
+			void step.hooks?.onToolCallStart?.(toolStartCtx);
+			void ectx.onToolCallStart?.(toolStartCtx);
 		} else if (event.type === "tool_execution_end") {
 			toolCallCount++;
 			ectx.onStepToolCall?.(step.label, toolCallCount);
+			const toolEndCtx = {
+				label: step.label,
+				input: stepInput,
+				original,
+				toolName: event.toolName as string,
+				toolInput: event.toolInput as unknown,
+				output: event.result as unknown,
+				isError: event.isError as boolean,
+			};
+			void step.hooks?.onToolCallEnd?.(toolEndCtx);
+			void ectx.onToolCallEnd?.(toolEndCtx);
 			if (!event.isError) {
 				if (!toolsUsed.includes(event.toolName)) toolsUsed.push(event.toolName);
 				const text =
@@ -81,100 +95,4 @@ export async function runPrompt(
 
 	if (disposeAfter) await session.dispose();
 	return { output, toolCallCount };
-}
-
-// ── Gate + failure handling ───────────────────────────────────────────────
-
-export async function handleFailure(
-	step: Step,
-	input: string,
-	original: string,
-	lastOutput: string,
-	gateResult: GateResult,
-	ectx: ExecutorContext,
-	retryCount: number,
-	gateCtx: GateCtx,
-	executeStepFn: ExecuteStepFn,
-): Promise<{
-	status: "passed" | "failed" | "skipped";
-	output: string;
-	error?: string;
-}> {
-	const onFail = step.onFail;
-	if (!onFail)
-		return { status: "failed", output: lastOutput, error: gateResult.reason };
-
-	const decision = await onFail({
-		reason: gateResult.reason,
-		retryCount,
-		stepCount: retryCount + 1,
-		output: lastOutput,
-	});
-	switch (decision.action) {
-		case "retry": {
-			if (retryCount >= MAX_EXECUTOR_RETRIES) {
-				return {
-					status: "failed",
-					output: lastOutput,
-					error: `Gate failed after ${MAX_EXECUTOR_RETRIES} retries: ${gateResult.reason}`,
-				};
-			}
-			const retryStep: Step = {
-				...step,
-				prompt: `${step.prompt}\n\n[RETRY ${retryCount + 1}: ${gateResult.reason}]\n\n${lastOutput.slice(0, 1000)}`,
-				gate: undefined,
-				onFail: undefined,
-			};
-			const { output: retryOutput } = await executeStepFn(
-				retryStep,
-				input,
-				original,
-				ectx,
-			);
-			const retryGate = step.gate
-				? await runGate(step.gate, retryOutput, gateCtx)
-				: { passed: true, reason: "No gate" };
-			if (retryGate.passed) return { status: "passed", output: retryOutput };
-			return handleFailure(
-				step,
-				input,
-				original,
-				retryOutput,
-				retryGate,
-				ectx,
-				retryCount + 1,
-				gateCtx,
-				executeStepFn,
-			);
-		}
-		case "fail":
-			return {
-				status: "failed",
-				output: lastOutput,
-				error: `Gate failed: ${gateResult.reason}`,
-			};
-		case "skip":
-			return {
-				status: "skipped",
-				output: "",
-				error: `Skipped: ${gateResult.reason}`,
-			};
-		case "warn":
-			return {
-				status: "passed",
-				output: lastOutput,
-				error: `⚠️ Warning: ${gateResult.reason}`,
-			};
-		case "fallback": {
-			const { output } = await executeStepFn(
-				{ ...decision.step, kind: "step" },
-				input,
-				original,
-				ectx,
-			);
-			return { status: "passed", output };
-		}
-		default:
-			return { status: "failed", output: lastOutput, error: gateResult.reason };
-	}
 }

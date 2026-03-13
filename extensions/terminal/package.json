@@ -1,0 +1,17 @@
+{
+	"name": "pi-terminal",
+	"version": "0.1.1",
+	"description": "Adds /terminal and /t commands to run shell commands in the current working directory and display output inline — with smart truncation and TUI notifications.",
+	"keywords": [
+		"pi-package"
+	],
+	"license": "MIT",
+	"pi": {
+		"extensions": [
+			"."
+		]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-coding-agent": "*"
+	}
+}

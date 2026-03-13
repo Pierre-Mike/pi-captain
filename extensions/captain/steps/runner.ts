@@ -84,6 +84,7 @@ export async function executeStep(
 	warmSession?: WarmSession | null,
 ): Promise<{ output: string; results: StepResult[] }> {
 	const start = Date.now();
+	await step.hooks?.onStart?.({ label: step.label, input, original });
 	ectx.onStepStart?.(step.label);
 
 	// Determine whether the pipeline-level shared session can serve this step.
@@ -122,6 +123,8 @@ export async function executeStep(
 			step,
 			ectx,
 			disposeAfter,
+			input,
+			original,
 		);
 
 		const gateCtx = makeGateCtx(ectx);
@@ -159,6 +162,7 @@ export async function executeStep(
 
 	result.elapsed = Date.now() - start;
 	if (ectx.stepGroup) result.group = ectx.stepGroup;
+	await step.hooks?.onFinish?.({ label: step.label, input, original, result });
 	ectx.onStepEnd?.(result);
 
 	const transformedOutput = await applyStepTransform(

@@ -1,0 +1,17 @@
+{
+	"name": "pi-agent-loop",
+	"version": "0.1.1",
+	"description": "General-purpose agent loop extension for pi. Supports goal loops (repeat until done), fixed-pass loops, and multi-stage pipelines via /loop goal, /loop passes, and /loop pipeline commands.",
+	"keywords": [
+		"pi-package"
+	],
+	"license": "MIT",
+	"pi": {
+		"extensions": [
+			"."
+		]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-coding-agent": "*"
+	}
+}

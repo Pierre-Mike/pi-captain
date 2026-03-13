@@ -4,8 +4,8 @@ import type { CaptainState } from "../state.js";
 import {
 	buildAdHocStep,
 	ensurePipelineLoaded,
-	parseCaptainRunArgs,
 	parseInlineFlags,
+	parsePipelineAndInput,
 	parseStepFlag,
 } from "./commands-parse.js";
 
@@ -122,29 +122,29 @@ describe("buildAdHocStep", () => {
 // ── ensurePipelineLoaded ──────────────────────────────────────────────────
 
 describe("ensurePipelineLoaded", () => {
-	test("returns true immediately when pipeline already in state", async () => {
+	test("returns the name immediately when pipeline already in state", async () => {
 		const spec: Runnable = { kind: "step", label: "x", prompt: "y" };
 		const state = makeState({ "my-pipe": { spec } });
 		const msgs: string[] = [];
 		const result = await ensurePipelineLoaded("my-pipe", "/cwd", state, (m) =>
 			msgs.push(m),
 		);
-		expect(result).toBe(true);
+		expect(result).toBe("my-pipe");
 		expect(msgs).toHaveLength(0);
 	});
 
-	test("loads and returns true when resolvePreset succeeds", async () => {
+	test("loads and returns resolved name when resolvePreset succeeds", async () => {
 		const spec: Runnable = { kind: "step", label: "x", prompt: "y" };
 		const state = makeState({}, { name: "my-pipe", spec });
 		const msgs: string[] = [];
 		const result = await ensurePipelineLoaded("my-pipe", "/cwd", state, (m) =>
 			msgs.push(m),
 		);
-		expect(result).toBe(true);
+		expect(result).toBe("my-pipe");
 		expect(msgs[0]).toContain("Auto-loaded");
 	});
 
-	test("returns false and notifies when resolvePreset returns undefined", async () => {
+	test("returns undefined and notifies when resolvePreset returns undefined", async () => {
 		const state = makeState({}, undefined);
 		const errors: string[] = [];
 		const result = await ensurePipelineLoaded(
@@ -155,11 +155,11 @@ describe("ensurePipelineLoaded", () => {
 				if (lvl === "error") errors.push(m);
 			},
 		);
-		expect(result).toBe(false);
+		expect(result).toBeUndefined();
 		expect(errors[0]).toContain("missing");
 	});
 
-	test("returns false and notifies when resolvePreset throws", async () => {
+	test("returns undefined and notifies when resolvePreset throws", async () => {
 		const state = makeState({}, undefined, new Error("disk error"));
 		const errors: string[] = [];
 		const result = await ensurePipelineLoaded(
@@ -170,92 +170,43 @@ describe("ensurePipelineLoaded", () => {
 				if (lvl === "error") errors.push(m);
 			},
 		);
-		expect(result).toBe(false);
+		expect(result).toBeUndefined();
 		expect(errors[0]).toContain("disk error");
 	});
 });
 
-// ── parseCaptainRunArgs ───────────────────────────────────────────────────
+// ── parsePipelineAndInput ─────────────────────────────────────────────────
 
-describe("parseCaptainRunArgs", () => {
-	const step: Runnable = { kind: "step", label: "Research", prompt: "do it" };
-
-	test("returns null and notifies when name is missing", async () => {
-		const state = makeState();
-		const errors: string[] = [];
-		const result = await parseCaptainRunArgs("", state, "/cwd", (m, lvl) => {
-			if (lvl === "error") errors.push(m);
-		});
-		expect(result).toBeNull();
-		expect(errors[0]).toContain("Usage");
+describe("parsePipelineAndInput", () => {
+	test("splits bare tokens into pipeline and input", () => {
+		const { pipeline, input } = parsePipelineAndInput("my-preset do the thing");
+		expect(pipeline).toBe("my-preset");
+		expect(input).toBe("do the thing");
 	});
 
-	test("returns null and notifies when input is missing", async () => {
-		const state = makeState({ "my-pipe": { spec: step } });
-		const errors: string[] = [];
-		const result = await parseCaptainRunArgs(
-			"my-pipe",
-			state,
-			"/cwd",
-			(m, lvl) => {
-				if (lvl === "error") errors.push(m);
-			},
+	test("handles single-quoted tokens", () => {
+		const { pipeline, input } = parsePipelineAndInput(
+			"'./pipe.ts' 'hello world'",
 		);
-		expect(result).toBeNull();
-		expect(errors[0]).toContain("Usage");
+		expect(pipeline).toBe("./pipe.ts");
+		expect(input).toBe("hello world");
 	});
 
-	test("returns parsed result for valid name and input", async () => {
-		const state = makeState({ "my-pipe": { spec: step } });
-		const result = await parseCaptainRunArgs(
-			"my-pipe hello world",
-			state,
-			"/cwd",
-			() => {
-				/* noop */
-			},
-		);
-		expect(result).not.toBeNull();
-		expect(result?.name).toBe("my-pipe");
-		expect(result?.input).toBe("hello world");
-		expect(result?.stepFilter).toBeUndefined();
+	test("handles double-quoted tokens", () => {
+		const { pipeline, input } = parsePipelineAndInput('"my preset" "run it"');
+		expect(pipeline).toBe("my preset");
+		expect(input).toBe("run it");
 	});
 
-	test("extracts --step filter and resolves matching step", async () => {
-		const state = makeState({ "my-pipe": { spec: step } });
-		const result = await parseCaptainRunArgs(
-			"my-pipe --step Research hello",
-			state,
-			"/cwd",
-			() => {
-				/* noop */
-			},
-		);
-		expect(result?.stepFilter).toBe("Research");
-		expect(result?.specToRun).toBe(step);
+	test("returns empty input when only pipeline given", () => {
+		const { pipeline, input } = parsePipelineAndInput("my-preset");
+		expect(pipeline).toBe("my-preset");
+		expect(input).toBe("");
 	});
 
-	test("returns null and notifies when --step label not found", async () => {
-		const state = makeState({ "my-pipe": { spec: step } });
-		const errors: string[] = [];
-		const result = await parseCaptainRunArgs(
-			"my-pipe --step Unknown hello",
-			state,
-			"/cwd",
-			(m, lvl) => {
-				if (lvl === "error") errors.push(m);
-			},
-		);
-		expect(result).toBeNull();
-		expect(errors[0]).toContain("Unknown");
-	});
-
-	test("lists loaded pipelines in the usage message when no name given and pipelines exist", async () => {
-		const state = makeState({ "pipe-a": { spec: step } });
-		const infos: string[] = [];
-		await parseCaptainRunArgs("", state, "/cwd", (m, lvl) => {
-			if (lvl === "info") infos.push(m);
-		});
-		expect(infos[0]).toContain("pipe-a");
+	test("returns empty pipeline and input for empty string", () => {
+		const { pipeline, input } = parsePipelineAndInput("");
+		expect(pipeline).toBe("");
+		expect(input).toBe("");
 	});
 });

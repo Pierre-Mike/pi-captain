@@ -1,0 +1,17 @@
+{
+	"name": "pi-native-web-search",
+	"version": "0.1.1",
+	"description": "Adds a web_search tool powered by Anthropic's native web search — no third-party API key needed. Always runs via claude-haiku-4-5 for fast, cheap retrieval with source URLs.",
+	"keywords": [
+		"pi-package"
+	],
+	"license": "MIT",
+	"pi": {
+		"extensions": [
+			"."
+		]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-coding-agent": "*"
+	}
+}

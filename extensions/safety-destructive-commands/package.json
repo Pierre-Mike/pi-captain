@@ -1,0 +1,17 @@
+{
+	"name": "pi-safety-destructive-commands",
+	"version": "0.1.1",
+	"description": "Intercepts dangerous bash commands (dd, mkfs, rm -rf /, fork bombs, iptables flush, shutdown…) and hard-blocks or prompts for confirmation before execution.",
+	"keywords": [
+		"pi-package"
+	],
+	"license": "MIT",
+	"pi": {
+		"extensions": [
+			"."
+		]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-coding-agent": "*"
+	}
+}

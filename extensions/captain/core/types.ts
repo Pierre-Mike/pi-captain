@@ -1,95 +1,23 @@
 // ── Captain: Pipeline Orchestration Types ──────────────────────────────────
+// Gate/OnFail/Transform primitives live in gate-types.ts.
+// Step lifecycle hooks live in hook-types.ts.
 
-// Re-use the concrete model type from the pi-ai peer dep — it is already
-// declared as a peer dependency so importing it here is safe.
+export type {
+	Gate,
+	GateCtx,
+	MergeFn,
+	OnFail,
+	OnFailCtx,
+	OnFailResult,
+	Transform,
+	TransformCtx,
+} from "./gate-types.js";
+export type {
+	StepHookCtx,
+	StepHooks,
+	ToolHookCtx,
+} from "./hook-types.js";
 export type { ModelRegistryLike } from "./utils/model.js";
-
-/**
- * Side-effect helpers available to gates that need shell, UI, or LLM access.
- * Simple gates that only inspect output can ignore this entirely.
- */
-export interface GateCtx {
-	/** Working directory for shell commands */
-	readonly cwd: string;
-	readonly signal?: AbortSignal;
-	/** Run a shell command — resolves with exit code + stdout/stderr */
-	readonly exec: (
-		cmd: string,
-		args: readonly string[],
-		opts?: { signal?: AbortSignal },
-	) => Promise<{
-		readonly stdout: string;
-		readonly stderr: string;
-		readonly code: number;
-	}>;
-	/** Show a confirm dialog (only available in interactive sessions) */
-	readonly confirm?: (title: string, body: string) => Promise<boolean>;
-	readonly hasUI: boolean;
-	/** Current LLM model (used by llm/llmFast/llmStrict gates) */
-	readonly model?: import("@mariozechner/pi-ai").Model<
-		import("@mariozechner/pi-ai").Api
-	>;
-	readonly apiKey?: string;
-	readonly modelRegistry?: import("./utils/model.js").ModelRegistryLike;
-	/** Names of tools that were actually called during the step (e.g. ["bash", "web_search"]) */
-	readonly toolsUsed?: readonly string[];
-}
-
-/**
- * A gate is a plain function: receives the step output and optional side-effect
- * context. Returns true to pass, or a string describing why it failed.
- * Async gates are allowed. Throwing is also treated as a failure.
- */
-export type Gate = (params: {
-	readonly output: string;
-	readonly ctx?: GateCtx;
-}) => true | string | Promise<true | string>;
-
-/**
- * Context passed to an OnFail handler — describes why and how many times we've failed.
- */
-export interface OnFailCtx {
-	/** The gate failure reason */
-	readonly reason: string;
-	/** How many retries have already been attempted (0 on first failure) */
-	readonly retryCount: number;
-	/** Total number of times the step has run so far (retryCount + 1) */
-	readonly stepCount: number;
-	/** The last output produced before the failure */
-	readonly output: string;
-}
-
-/** Decision returned by OnFail: retry | fail | skip | warn | fallback(step) */
-export type OnFailResult =
-	| { readonly action: "retry" }
-	| { readonly action: "fail" }
-	| { readonly action: "skip" }
-	| { readonly action: "warn" }
-	| { readonly action: "fallback"; readonly step: Step };
-
-/** Failure handler — pure function; all retry logic lives inside it. */
-export type OnFail = (ctx: OnFailCtx) => OnFailResult | Promise<OnFailResult>;
-
-/** Same surface as GateCtx — transforms can exec shell, call LLMs, or use the UI. */
-export type TransformCtx = GateCtx;
-
-/** Maps one step's output to the next step's input. */
-export type Transform = (params: {
-	/** The raw output produced by the step */
-	readonly output: string;
-	/** The very first input to the whole pipeline ($ORIGINAL) */
-	readonly original: string;
-	/** Side-effect helpers (shell, confirm, LLM model, …) */
-	readonly ctx: TransformCtx;
-}) => string | Promise<string>;
-
-/** Combines multiple branch outputs into one string. */
-export type MergeFn = (
-	outputs: readonly string[],
-	ctx: import("./merge.js").MergeCtx,
-) => string | Promise<string>;
-
-// ── Composition Types (infinitely nestable) ────────────────────────────────
 
 /** Known shorthands or any full model ID string. */
 export type ModelId = "sonnet" | "flash" | "haiku" | "opus" | (string & {});
@@ -108,18 +36,20 @@ export interface Step {
 	readonly description?: string;
 	readonly prompt: string;
 
-	readonly gate?: Gate;
-	readonly onFail?: OnFail;
-	readonly transform?: Transform;
+	readonly gate?: import("./gate-types.js").Gate;
+	readonly onFail?: import("./gate-types.js").OnFail;
+	readonly transform?: import("./gate-types.js").Transform;
+	/** Per-step lifecycle hooks — run before the matching ExecutorContext callback. */
+	readonly hooks?: import("./hook-types.js").StepHooks;
 }
 
 /** Sequential — run in order, output chains via $INPUT */
 export interface Sequential {
 	readonly kind: "sequential";
 	readonly steps: readonly Runnable[];
-	readonly gate?: Gate;
-	readonly onFail?: OnFail;
-	readonly transform?: Transform;
+	readonly gate?: import("./gate-types.js").Gate;
+	readonly onFail?: import("./gate-types.js").OnFail;
+	readonly transform?: import("./gate-types.js").Transform;
 }
 
 /** Pool — replicate ONE runnable N times */
@@ -127,20 +57,20 @@ export interface Pool {
 	readonly kind: "pool";
 	readonly step: Runnable;
 	readonly count: number;
-	readonly merge: MergeFn;
-	readonly gate?: Gate;
-	readonly onFail?: OnFail;
-	readonly transform?: Transform;
+	readonly merge: import("./gate-types.js").MergeFn;
+	readonly gate?: import("./gate-types.js").Gate;
+	readonly onFail?: import("./gate-types.js").OnFail;
+	readonly transform?: import("./gate-types.js").Transform;
 }
 
 /** Parallel — run DIFFERENT runnables concurrently */
 export interface Parallel {
 	readonly kind: "parallel";
 	readonly steps: readonly Runnable[];
-	readonly merge: MergeFn;
-	readonly gate?: Gate;
-	readonly onFail?: OnFail;
-	readonly transform?: Transform;
+	readonly merge: import("./gate-types.js").MergeFn;
+	readonly gate?: import("./gate-types.js").Gate;
+	readonly onFail?: import("./gate-types.js").OnFail;
+	readonly transform?: import("./gate-types.js").Transform;
 }
 
 /** Union type — any composable unit */
