@@ -1,6 +1,6 @@
 {
 	"name": "pi-captain",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Captain — multi-agent pipeline orchestrator for pi. Define specialized agents, wire them into sequential/parallel/pool pipelines with quality gates, and run complex workflows.",
 	"keywords": [
 		"pi-package"
@@ -15,7 +15,8 @@
 		"typecheck:layers": "tsc --build extensions/captain/core/tsconfig.json extensions/captain/infra/tsconfig.json extensions/captain/gates/tsconfig.json extensions/captain/transforms/tsconfig.json extensions/captain/steps/tsconfig.json extensions/captain/composition/tsconfig.json extensions/captain/shell/tsconfig.json",
 		"prepare": "lefthook install",
 		"line-limit": "find extensions skills -name '*.ts' ! -name '*.test.ts' | xargs wc -l 2>/dev/null | awk '$1 > 200 && $2 != \"total\"' | grep -v node_modules",
-		"arch:check": "bun x --bun dependency-cruiser --config .dependency-cruiser.cjs extensions/captain"
+		"arch:check": "bun x --bun dependency-cruiser --config .dependency-cruiser.cjs extensions/captain",
+		"publish:all": "npm publish && npm publish --workspaces --access public"
 	},
 	"peerDependencies": {
 		"@mariozechner/pi-agent-core": "*",
@@ -27,13 +28,26 @@
 	},
 	"pi": {
 		"extensions": [
-			"./extensions"
+			"./extensions/captain"
 		],
 		"skills": [
 			"./skills"
 		],
 		"image": "https://raw.githubusercontent.com/Pierre-Mike/pi-captain/main/assets/preview.png"
 	},
+	"workspaces": [
+		"extensions/clear",
+		"extensions/terminal",
+		"extensions/freecad",
+		"extensions/agent-loop",
+		"extensions/refactor-loop",
+		"extensions/safety-destructive-commands",
+		"extensions/safety-git-operations",
+		"extensions/safety-network-exfiltration",
+		"extensions/safety-path-protection",
+		"extensions/native-web-search",
+		"extensions/zellij-tab-namer"
+	],
 	"dependencies": {
 		"neverthrow": "^8.2.0"
 	},
