@@ -1,6 +1,6 @@
 {
 	"name": "pi-captain",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"description": "Captain — multi-agent pipeline orchestrator for pi. Define specialized agents, wire them into sequential/parallel/pool pipelines with quality gates, and run complex workflows.",
 	"keywords": [
 		"pi-package"
