@@ -6,8 +6,10 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { CaptainState } from "../state.js";
 import { registerCommandsA } from "./commands-register-a.js";
 import { registerCommandsB } from "./commands-register-b.js";
+import { registerCommandsC } from "./commands-register-c.js";
 
 export function registerCommands(pi: ExtensionAPI, state: CaptainState): void {
 	registerCommandsA(pi, state);
 	registerCommandsB(pi, state);
+	registerCommandsC(pi, state);
 }

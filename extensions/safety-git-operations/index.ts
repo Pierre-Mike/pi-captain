@@ -1,25 +1,13 @@
 /**
  * Safety Guard: Git & SCM Operations
  *
- * Guards all state-changing git operations and GitHub/GitLab CLI commands.
- * Operations are classified by risk severity:
+ * 🔴 Critical (always confirm, auto-deny 30s): push --force, reset --hard, clean -f,
+ *    stash drop/clear, branch -D, reflog expire
+ * 🟡 Standard (confirm + session-remember): push, commit, rebase, merge, tag, cherry-pick,
+ *    revert; gh/glab PR/issue/release/secrets
+ * ⛔ Always-blocked: permanently forbidden destructive ops (no override)
  *
- * 🔴 Critical (always confirm, auto-deny after 30s):
- *   - git push --force / --force-with-lease
- *   - git reset --hard
- *   - git clean -f
- *   - git stash drop / clear
- *   - git branch -D (force delete)
- *   - git reflog expire
- *
- * 🟡 Standard (confirm with session-remember option):
- *   - git push, commit, rebase, merge, tag, cherry-pick, revert
- *   - gh/glab: PR create/merge/close, issue create/close/delete, release, secrets
- *
- * Features:
- *   - Per-action session memory: approve/block an action type for the whole session
- *   - /git-safety command to view status and reset session approvals
- *   - In non-interactive mode, all operations are blocked
+ * Features: per-action session memory, /git-safety command, non-UI auto-block.
  */
 
 import type {
@@ -28,6 +16,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { isToolCallEventType } from "@mariozechner/pi-coding-agent";
 import {
+	ALWAYS_BLOCKED_PATTERNS,
 	GIT_PATTERNS,
 	resetSessionMemory,
 	sessionApproved,
@@ -187,6 +176,17 @@ export default function (pi: ExtensionAPI) {
 		if (!isToolCallEventType("bash", event)) return undefined;
 
 		const command = event.input.command;
+
+		// Hard blocks — permanently forbidden, no confirmation, no override
+		for (const { pattern, action, reason } of ALWAYS_BLOCKED_PATTERNS) {
+			if (!pattern.test(command)) continue;
+			if (ctx.hasUI)
+				ctx.ui.notify(
+					`🚫 ${action} is permanently blocked\n\n${reason}`,
+					"error",
+				);
+			return { block: true, reason };
+		}
 
 		// Find first matching pattern (patterns are ordered critical-first)
 		for (const { pattern, action, severity } of GIT_PATTERNS) {

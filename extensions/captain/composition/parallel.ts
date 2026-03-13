@@ -136,6 +136,8 @@ export async function executeParallel(
 	} finally {
 		// Remove all worktrees in parallel instead of sequentially.
 		// Branches that have a commit are kept in git history for recovery.
+		// Use `undefined` (no signal) so cleanup always runs — even when the
+		// pipeline was killed and ectx.signal is already aborted.
 		await Promise.all(
 			worktrees.map((wt) =>
 				removeWorktree(
@@ -143,7 +145,7 @@ export async function executeParallel(
 					ectx.cwd,
 					wt.path,
 					wt.branch,
-					ectx.signal,
+					undefined,
 					wt.keep === true,
 				),
 			),

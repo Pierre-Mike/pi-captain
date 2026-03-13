@@ -1,54 +1,19 @@
 // ── tools/run-helpers.ts — Pipeline execution context builders ────────────
-// Extracted from run.ts to stay within 200-line limit (Basic_knowledge.md).
 
 import type {
 	DefaultResourceLoader,
 	ExtensionAPI,
 	ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import * as piSdk from "@mariozechner/pi-coding-agent";
 import type { PipelineState, StepResult } from "../core/types.js";
 import type { ExecutorContext } from "../shell/executor.js";
 import { executeRunnable } from "../shell/executor.js";
 import type { CaptainState } from "../state.js";
 import { text } from "./helpers.js";
+import { makeStepHooks } from "./run-format.js";
 
 export type ExecCtx = ExtensionContext;
-
-/** Build the lifecycle hooks that update the pipeline widget on each step event. */
-export function makeStepHooks(
-	pipelineState: PipelineState,
-	ctx: ExecCtx,
-	updateWidget: (ctx: ExecCtx, s: PipelineState) => void,
-): Pick<
-	ExecutorContext,
-	"onStepStart" | "onStepStream" | "onStepEnd" | "onStepToolCall"
-> {
-	return {
-		onStepStart: (label) => {
-			pipelineState.currentSteps.add(label);
-			pipelineState.currentStepStreams.delete(label);
-			pipelineState.currentStepToolCalls.delete(label);
-			updateWidget(ctx, pipelineState);
-		},
-		onStepStream: (label, streamText) => {
-			pipelineState.currentStepStreams.set(label, streamText);
-			updateWidget(ctx, pipelineState);
-		},
-		onStepToolCall: (label, totalCalls) => {
-			pipelineState.currentStepToolCalls.set(label, totalCalls);
-			updateWidget(ctx, pipelineState);
-		},
-		onStepEnd: (result: StepResult) => {
-			pipelineState.currentSteps.delete(result.label);
-			pipelineState.currentStepStreams.delete(result.label);
-			pipelineState.currentStepToolCalls.delete(result.label);
-			pipelineState.results.push(result);
-			updateWidget(ctx, pipelineState);
-		},
-	};
-}
-
+export { buildCompletionText } from "./run-format.js";
 /** Assemble the ExecutorContext for a pipeline run. */
 export function buildEctx(
 	pi: ExtensionAPI,
@@ -73,17 +38,26 @@ export function buildEctx(
 		...makeStepHooks(pipelineState, ctx, updateWidget),
 	};
 }
-
-/** Run a pipeline and return tool content result. */
+/** Merge two optional signals: aborts when either fires. */
+function mergeSignals(
+	a: AbortSignal | undefined,
+	b: AbortSignal | undefined,
+): AbortSignal | undefined {
+	if (!(a || b)) return undefined;
+	if (!a) return b;
+	if (!b) return a;
+	return AbortSignal.any([a, b]);
+}
+/** Run a pipeline (blocking or background fire-and-forget). */
 export async function runPipeline(
 	pi: ExtensionAPI,
 	state: CaptainState,
 	resolvedName: string,
 	resolvedInput: string | undefined,
-	signal: AbortSignal | undefined,
+	toolSignal: AbortSignal | undefined,
 	ctx: ExecCtx,
 	updateWidget: (ctx: ExecCtx, s: PipelineState) => void,
-	clearWidget: (ctx: ExecCtx) => void,
+	clearWidget: (ctx: ExecCtx, s: PipelineState) => void,
 	buildCompletionText: (
 		name: string,
 		output: string,
@@ -91,6 +65,7 @@ export async function runPipeline(
 		start?: number,
 		end?: number,
 	) => string,
+	background = false,
 ): Promise<{ content: { type: "text"; text: string }[]; details: undefined }> {
 	const pipeline = state.pipelines[resolvedName];
 	if (!pipeline)
@@ -109,7 +84,14 @@ export async function runPipeline(
 		currentStepToolCalls: new Map(),
 		startTime: Date.now(),
 	};
-	state.runningState = pipelineState;
+
+	// Allocate a job (owns its AbortController for independent kill).
+	const job = state.allocateJob(pipelineState);
+	// For background runs, ignore the tool signal; for blocking, merge both signals.
+	const signal = background
+		? job.controller.signal
+		: mergeSignals(toolSignal, job.controller.signal);
+
 	updateWidget(ctx, pipelineState);
 
 	if (!ctx.model)
@@ -133,18 +115,58 @@ export async function runPipeline(
 		updateWidget,
 	);
 
+	const runPromise = executeRunnable(pipeline.spec, inputStr, inputStr, ectx);
+
+	// ── Background: fire and return immediately ──────────────────────────
+	if (background) {
+		runPromise
+			.then(({ output, results }) => {
+				if (pipelineState.status !== "cancelled") {
+					pipelineState.status = "completed";
+					pipelineState.finalOutput = output;
+					pipelineState.results = results;
+				}
+				pipelineState.endTime = Date.now();
+				clearWidget(ctx, pipelineState);
+			})
+			.catch(() => {
+				if (pipelineState.status !== "cancelled")
+					pipelineState.status = "failed";
+				pipelineState.endTime = Date.now();
+				clearWidget(ctx, pipelineState);
+			});
+
+		return {
+			content: [
+				text(
+					[
+						`Pipeline "${resolvedName}" started as job #${job.id}.`,
+						`Check progress: captain_status { "name": "${resolvedName}" }`,
+						`Kill:           captain_kill { "id": ${job.id} }`,
+					].join("\n"),
+				),
+			],
+			details: undefined,
+		};
+	}
+
+	// ── Blocking: wait for completion ────────────────────────────────────
 	try {
-		const { output, results } = await executeRunnable(
-			pipeline.spec,
-			inputStr,
-			inputStr,
-			ectx,
-		);
+		const { output, results } = await runPromise;
+		if (pipelineState.status === "cancelled") {
+			clearWidget(ctx, pipelineState);
+			return {
+				content: [
+					text(`Pipeline "${resolvedName}" (job #${job.id}) was killed.`),
+				],
+				details: undefined,
+			};
+		}
 		pipelineState.status = "completed";
 		pipelineState.finalOutput = output;
 		pipelineState.endTime = Date.now();
 		pipelineState.results = results;
-		clearWidget(ctx);
+		clearWidget(ctx, pipelineState);
 		return {
 			content: [
 				text(
@@ -160,41 +182,19 @@ export async function runPipeline(
 			details: undefined,
 		};
 	} catch (err) {
-		pipelineState.status = "failed";
+		const wasCancelled = pipelineState.status === "cancelled";
+		if (!wasCancelled) pipelineState.status = "failed";
 		pipelineState.endTime = Date.now();
-		clearWidget(ctx);
+		clearWidget(ctx, pipelineState);
 		return {
 			content: [
 				text(
-					`Pipeline "${resolvedName}" failed: ${err instanceof Error ? err.message : String(err)}`,
+					wasCancelled
+						? `Pipeline "${resolvedName}" (job #${job.id}) was killed.`
+						: `Pipeline "${resolvedName}" failed: ${err instanceof Error ? err.message : String(err)}`,
 				),
 			],
 			details: undefined,
 		};
 	}
-}
-
-// ── Output formatter ─────────────────────────────────────────────────────
-export function buildCompletionText(
-	name: string,
-	output: string,
-	results: StepResult[],
-	startTime: number | undefined,
-	endTime: number | undefined,
-): string {
-	const end = endTime ?? Date.now();
-	const elapsed = ((end - (startTime ?? end)) / 1000).toFixed(1);
-	const passed = results.filter((r) => r.status === "passed").length;
-	const failed = results.filter((r) => r.status === "failed").length;
-	const skipped = results.filter((r) => r.status === "skipped").length;
-	const { content: truncated } = piSdk.truncateHead(output, {
-		maxLines: piSdk.DEFAULT_MAX_LINES,
-		maxBytes: piSdk.DEFAULT_MAX_BYTES,
-	});
-	return [
-		`Pipeline "${name}" completed in ${elapsed}s`,
-		`Steps: ${results.length} (${passed} passed, ${failed} failed, ${skipped} skipped)`,
-		"── Output ──",
-		truncated,
-	].join("\n");
 }

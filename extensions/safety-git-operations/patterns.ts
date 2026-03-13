@@ -153,6 +153,27 @@ export const GIT_PATTERNS: GitPattern[] = [
 	},
 ];
 
+// ── Hard-blocked patterns (never allowed, no confirmation) ──────────────────
+
+/**
+ * These patterns are ALWAYS blocked — no confirmation dialog, no session override.
+ * The user's intent is absolute: these flags must never be executed.
+ */
+export interface HardBlockedPattern {
+	pattern: RegExp;
+	action: string;
+	reason: string;
+}
+
+export const ALWAYS_BLOCKED_PATTERNS: HardBlockedPattern[] = [
+	{
+		pattern: /--no-verify\b/i,
+		action: "--no-verify",
+		reason:
+			"--no-verify bypasses git hooks (pre-commit, commit-msg, pre-push). This flag is permanently blocked.",
+	},
+];
+
 // ── Session memory ───────────────────────────────────────────────────────────
 
 // Track which actions the user has pre-approved or pre-blocked for this session

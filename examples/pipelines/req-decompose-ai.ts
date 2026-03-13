@@ -29,8 +29,9 @@
 //   6. SCORE        → shrinker: Haiku-safe complexity scoring, re-split until composite ≤ 2
 //                     (preserves all contract fields; only adds score lines + re-splits)
 //   7. RESOLVE      → resolver: adjacency graph → topological sort → parallel layers
-//   8. EXEC SPEC    → resolver: layered units → captain pipeline JSON (execution-spec.json)
-//   9. CANVAS       → canvas-renderer: visual backlog.canvas for Obsidian
+//   8+9. PARALLEL   → exec spec + canvas concurrently (both read topo layers, write independent files)
+//          ├── EXEC SPEC  → execution-pipeline.ts
+//          └── CANVAS     → canvas-renderer: visual backlog.canvas for Obsidian
 //
 // What changed vs req-decompose (human):
 //   - sliceStories  → sliceStoriesAi   (adds codebase scan + file area per story)
@@ -51,8 +52,12 @@
 //         contract-tasks, shred-and-score, validate-contracts, resolve-dependencies,
 //         generate-execution-spec, render-canvas}.ts
 
-import { rank } from "../../extensions/captain/core/merge.js";
-import type { Pool, Runnable } from "../../extensions/captain/types.js";
+import { awaitAll, rank } from "../../extensions/captain/core/merge.js";
+import type {
+	Parallel,
+	Pool,
+	Runnable,
+} from "../../extensions/captain/types.js";
 import { bddScenarios } from "../steps/bdd-scenarios.js";
 import { contractTasks } from "../steps/contract-tasks.js";
 import { earsStructure } from "../steps/ears-structure.js";
@@ -75,6 +80,18 @@ const slicePool: Pool = {
 	merge: rank,
 };
 
+// ── Stage 8+9: Parallel — exec spec + canvas from the same topo layers ──
+// Both steps consume resolveDependencies output and are fully independent.
+
+const specAndCanvas: Parallel = {
+	kind: "parallel",
+	steps: [
+		generateExecutionSpec, //  8️⃣  EXEC SPEC — topo layers → .pi/pipelines/execution-pipeline.ts
+		renderCanvas, //  9️⃣  CANVAS    — topo layers → Obsidian backlog.canvas
+	],
+	merge: awaitAll, // wait for both; outputs concatenated (each writes its own file)
+};
+
 // ── Pipeline Spec ────────────────────────────────────────────────────────
 
 export const pipeline: Runnable = {
@@ -87,7 +104,6 @@ export const pipeline: Runnable = {
 		validateContracts, //  5️⃣  VALIDATE  — new: machine-verifiability gate (before scoring)
 		shredAndScore, //  6️⃣  SCORE     — shredder: Haiku-safe complexity (reused)
 		resolveDependencies, //  7️⃣  RESOLVE   — shredder: topo sort → parallel layers (reused)
-		generateExecutionSpec, //  8️⃣  EXEC SPEC — shredder: captain pipeline JSON (reused)
-		renderCanvas, //  9️⃣  CANVAS    — shredder: Obsidian backlog.canvas (reused)
+		specAndCanvas, //  8️⃣+9️⃣ PARALLEL  — exec spec + canvas concurrently
 	],
 };

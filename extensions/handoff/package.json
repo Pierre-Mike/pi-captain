@@ -1,0 +1,17 @@
+{
+	"name": "pi-handoff",
+	"version": "0.1.0",
+	"description": "Adds /handoff command — asks the LLM to write a handoff prompt for the next agent, then starts a fresh session with the prompt pre-loaded in the editor.",
+	"keywords": [
+		"pi-package"
+	],
+	"license": "MIT",
+	"pi": {
+		"extensions": [
+			"."
+		]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-coding-agent": "*"
+	}
+}

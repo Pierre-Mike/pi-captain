@@ -17,7 +17,13 @@ export function resolveAliases(raw: string, captainDir: string): string {
 		.replaceAll(ALIAS_NO_BRACKETS, `"${captainDir}/`);
 }
 
-/** Extract the `pipeline` export from a dynamically imported module. */
+const RUNNABLE_KINDS = new Set(["step", "sequential", "pool", "parallel"]);
+
+/** Extract the `pipeline` export from a dynamically imported module.
+ * Falls back to scanning all exports for any object with a valid `kind`
+ * so that step files (e.g. `export const reviewCode: Step = { ... }`)
+ * can be loaded directly without wrapping them in a pipeline file.
+ */
 export function extractPipeline(
 	mod: Record<string, unknown>,
 ): Runnable | undefined {
@@ -27,7 +33,21 @@ export function extractPipeline(
 		return direct as unknown as Runnable;
 	const fromDefault = (mod.default as { pipeline?: Runnable } | undefined)
 		?.pipeline;
-	return fromDefault;
+	if (fromDefault) return fromDefault;
+
+	// Fall back: scan every named export for a Runnable shape
+	for (const [key, val] of Object.entries(mod)) {
+		if (key === "default") continue;
+		if (
+			val &&
+			typeof val === "object" &&
+			"kind" in val &&
+			RUNNABLE_KINDS.has((val as { kind: string }).kind)
+		) {
+			return val as unknown as Runnable;
+		}
+	}
+	return undefined;
 }
 
 /**
@@ -68,8 +88,8 @@ export async function loadTsPipelineFile(
 	const pipeline = extractPipeline(mod);
 	if (!pipeline?.kind) {
 		throw new Error(
-			`Invalid TypeScript pipeline file: "${filePath}" must export a "pipeline" const of type Runnable.\n` +
-				`Tip: ensure your file exports a "pipeline" const with a "kind" field.\n` +
+			`Invalid TypeScript pipeline file: "${filePath}" must export a Runnable.\n` +
+				`Tip: export a "pipeline" const, OR any named const with kind "step" | "sequential" | "pool" | "parallel".\n` +
 				`If you used captain aliases, use "<captain>/" or "captain/" (e.g. "captain/gates/on-fail.js")`,
 		);
 	}

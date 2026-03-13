@@ -6,7 +6,7 @@
 // guard block that sits in front of the existing pipeline-lookup logic.
 
 import { describe, expect, mock, test } from "bun:test";
-import type { Runnable } from "../core/types.js";
+import type { PipelineState, Runnable } from "../core/types.js";
 import { skip } from "../gates/on-fail.js";
 import type { CaptainState } from "../state.js";
 import { full } from "../transforms/presets.js";
@@ -93,10 +93,28 @@ function makeMinimalState(
 	options: { loadedPipelines?: Record<string, { spec: Runnable }> } = {},
 ): CaptainState {
 	const pipelines = options.loadedPipelines ?? {};
+	const jobs = new Map();
+	let nextId = 1;
 
 	return {
 		pipelines,
-		runningState: null,
+		jobs,
+		get runningState() {
+			const all = [...jobs.values()];
+			for (let i = all.length - 1; i >= 0; i--) {
+				if (all[i].state.status === "running") return all[i].state;
+			}
+			return all.at(-1)?.state ?? null;
+		},
+		allocateJob: (pipelineState: PipelineState) => {
+			const id = nextId++;
+			const controller = new AbortController();
+			pipelineState.jobId = id;
+			const job = { id, state: pipelineState, controller };
+			jobs.set(id, job);
+			return job;
+		},
+		killJob: (_id: number) => "not-found" as const,
 		snapshot: () => ({ pipelines, lastRun: undefined }),
 		resolvePreset: (_name: string) => undefined,
 		discoverPresets: () => [],

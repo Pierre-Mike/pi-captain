@@ -28,7 +28,19 @@
 	},
 	"pi": {
 		"extensions": [
-			"./extensions/captain"
+			"./extensions/captain",
+			"./extensions/clear",
+			"./extensions/terminal",
+			"./extensions/freecad",
+			"./extensions/agent-loop",
+			"./extensions/refactor-loop",
+			"./extensions/safety-destructive-commands",
+			"./extensions/safety-git-operations",
+			"./extensions/safety-network-exfiltration",
+			"./extensions/safety-path-protection",
+			"./extensions/native-web-search",
+			"./extensions/zellij-tab-namer",
+			"./extensions/handoff"
 		],
 		"skills": [
 			"./skills"

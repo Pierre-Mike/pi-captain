@@ -76,4 +76,41 @@ describe("extractPipeline", () => {
 	test("returns undefined for empty module", () => {
 		expect(extractPipeline({})).toBeUndefined();
 	});
+
+	test("falls back to any named export with a valid kind (step)", () => {
+		const step = { kind: "step", label: "review", prompt: "…" } as Runnable;
+		const mod = { reviewCode: step };
+		expect(extractPipeline(mod)).toBe(step);
+	});
+
+	test("falls back to any named export with a valid kind (sequential)", () => {
+		const seq = { kind: "sequential", steps: [] } as unknown as Runnable;
+		const mod = { myPipeline: seq };
+		expect(extractPipeline(mod)).toBe(seq);
+	});
+
+	test("falls back to any named export with a valid kind (pool)", () => {
+		const pool = {
+			kind: "pool",
+			step: { kind: "step", label: "s", prompt: "" },
+			count: 3,
+			merge: () => "",
+		} as unknown as Runnable;
+		const mod = { myPool: pool };
+		expect(extractPipeline(mod)).toBe(pool);
+	});
+
+	test("skips 'default' key when scanning fallback exports", () => {
+		const step = { kind: "step", label: "s", prompt: "" } as Runnable;
+		// default key should NOT be picked up by fallback scan
+		const mod = { default: step };
+		expect(extractPipeline(mod)).toBeUndefined();
+	});
+
+	test("pipeline export still takes priority over other named exports", () => {
+		const pipe = { kind: "step", label: "pipe", prompt: "" } as Runnable;
+		const other = { kind: "step", label: "other", prompt: "" } as Runnable;
+		const mod = { pipeline: pipe, reviewCode: other };
+		expect(extractPipeline(mod)).toBe(pipe);
+	});
 });

@@ -5,10 +5,9 @@ import type {
 	ExtensionCommandContext,
 } from "@mariozechner/pi-coding-agent";
 import type { PipelineState, Runnable } from "../core/types.js";
-import { describeRunnable } from "../core/utils/index.js";
 import type { ExecutorContext } from "../shell/executor.js";
 import { executeRunnable } from "../shell/executor.js";
-import type { CaptainState } from "../state.js";
+import type { CaptainJob, CaptainState } from "../state.js";
 import { ensurePipelineLoaded } from "./commands-parse.js";
 import { clearWidget, updateWidget } from "./widget.js";
 
@@ -18,6 +17,7 @@ export async function buildEctx(
 	_state: CaptainState,
 	stateName: string,
 	pipelineState: PipelineState,
+	signal?: AbortSignal,
 ): Promise<ExecutorContext | undefined> {
 	const model = ctx.model;
 	if (!model) {
@@ -37,6 +37,7 @@ export async function buildEctx(
 		cwd: ctx.cwd,
 		hasUI: ctx.hasUI,
 		confirm: ctx.hasUI ? (t, b) => ctx.ui.confirm(t, b) : undefined,
+		signal,
 		pipelineName: stateName,
 		onStepStart: (label) => {
 			pipelineState.currentSteps.add(label);
@@ -62,6 +63,7 @@ export async function runRunnableFromCommand(
 	spec: Runnable,
 	input: string,
 	pipelineState: PipelineState,
+	job: CaptainJob,
 	state: CaptainState,
 	ctx: ExtensionCommandContext,
 ): Promise<void> {
@@ -71,16 +73,24 @@ export async function runRunnableFromCommand(
 		state,
 		pipelineState.name,
 		pipelineState,
+		job.controller.signal,
 	);
 	if (!ectx) return;
 
 	try {
 		const { output, results } = await executeRunnable(spec, input, input, ectx);
+		pipelineState.endTime = Date.now();
+		clearWidget(ctx, pipelineState);
+		if (pipelineState.status === "cancelled") {
+			ctx.ui.notify(
+				`✗ "${pipelineState.name}" (job #${pipelineState.jobId}) was killed.`,
+				"error",
+			);
+			return;
+		}
 		pipelineState.status = "completed";
 		pipelineState.finalOutput = output;
-		pipelineState.endTime = Date.now();
 		pipelineState.results = results;
-		clearWidget(ctx);
 		const elapsed = (
 			(pipelineState.endTime -
 				(pipelineState.startTime ?? pipelineState.endTime)) /
@@ -93,11 +103,14 @@ export async function runRunnableFromCommand(
 			failed > 0 ? "error" : "info",
 		);
 	} catch (err) {
-		pipelineState.status = "failed";
 		pipelineState.endTime = Date.now();
-		clearWidget(ctx);
+		clearWidget(ctx, pipelineState);
+		const wasCancelled = pipelineState.status === "cancelled";
+		if (!wasCancelled) pipelineState.status = "failed";
 		ctx.ui.notify(
-			`✗ "${pipelineState.name}" failed: ${err instanceof Error ? err.message : String(err)}`,
+			wasCancelled
+				? `✗ "${pipelineState.name}" (job #${pipelineState.jobId}) was killed.`
+				: `✗ "${pipelineState.name}" failed: ${err instanceof Error ? err.message : String(err)}`,
 			"error",
 		);
 	}
@@ -152,42 +165,20 @@ export async function runInteractivePipelineLauncher(
 		currentStepToolCalls: new Map(),
 		startTime: Date.now(),
 	};
-	state.runningState = pipelineState;
+	const job = state.allocateJob(pipelineState);
 	updateWidget(ctx, pipelineState);
-	await runRunnableFromCommand(
+	// Fire-and-forget: return immediately so the user can keep chatting.
+	// The widget shows live progress; ctx.ui.notify fires on completion/error.
+	void runRunnableFromCommand(
 		pi,
 		spec,
 		input.trim(),
 		pipelineState,
+		job,
 		state,
 		ctx,
 	);
 }
 
-export async function showPipelineDetails(
-	name: string,
-	state: CaptainState,
-	ctx: ExtensionCommandContext,
-): Promise<void> {
-	const p = state.pipelines[name];
-	if (p) {
-		ctx.ui.notify(
-			`Pipeline "${name}":\n${describeRunnable(p.spec, 0)}`,
-			"info",
-		);
-		return;
-	}
-	try {
-		const resolved = await state.resolvePreset(name, ctx.cwd);
-		if (resolved) {
-			ctx.ui.notify(
-				`Pipeline "${name}" (${resolved.source ?? "preset"} — not yet loaded):\n${describeRunnable(resolved.spec, 0)}`,
-				"info",
-			);
-			return;
-		}
-	} catch {
-		/* fall through */
-	}
-	ctx.ui.notify(`Pipeline "${name}" not found.`, "error");
-}
+// showPipelineDetails lives in commands-details.ts (line-limit)
+export { showPipelineDetails } from "./commands-details.js";

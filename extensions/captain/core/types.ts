@@ -101,7 +101,7 @@ export interface StepResult {
 export interface PipelineState {
 	readonly name: string;
 	readonly spec: Runnable;
-	status: "idle" | "running" | "completed" | "failed";
+	status: "idle" | "running" | "completed" | "failed" | "cancelled";
 	results: StepResult[];
 	readonly currentSteps: Set<string>;
 	readonly currentStepStreams: Map<string, string>;
@@ -109,4 +109,5 @@ export interface PipelineState {
 	startTime?: number;
 	endTime?: number;
 	finalOutput?: string;
+	jobId?: number;
 }

@@ -25,10 +25,11 @@ Captain turns pi into a pipeline orchestration platform. Define typed pipeline s
 
 | Tool | Purpose |
 |------|---------|
-| `captain_load` | Load a pipeline from a `.ts` file or builtin preset |
-| `captain_run` | Execute a defined pipeline with input |
+| `captain_run` | Execute a named pipeline (already loaded) with input |
 | `captain_status` | Check step-by-step results of a pipeline |
 | `captain_list` | List all defined pipelines |
+
+> **Prefer `/captain` over raw tool calls.** The `/captain` slash command loads *and* runs a pipeline in one shot, accepts a file path or preset name, and handles both steps automatically.
 
 ## Quick Start
 
@@ -87,12 +88,34 @@ export const pipeline: Runnable = {
 };
 ```
 
-### 2. Load and run it
+### 2. Run it — one shot
+
+Use the `/captain` slash command — it loads **and** runs in a single step:
 
 ```
-captain_load: action="load", name="./my-pipeline.ts"
-captain_run: name="my-pipeline", input="Build a REST API for user management"
+/captain ./my-pipeline.ts "Build a REST API for user management"
+/captain captain:showcase "Research quantum computing"
 ```
+
+`/captain` accepts:
+- A **relative or absolute path** to a `.ts` pipeline file **or step file**
+- A **preset name** (e.g. `captain:showcase`, see `/captain-load` for the full list)
+- An optional **input string** as the second argument (becomes `$ORIGINAL` and first `$INPUT`)
+
+**Step files work directly** — no need to wrap in a pipeline file. Any `.ts` file that exports a named const with `kind: "step"` (or any other Runnable kind) is accepted:
+
+```ts
+// examples/steps/review-code.ts
+export const reviewCode: Step = { kind: "step", label: "Review", prompt: "…", … };
+```
+
+```
+/captain examples/steps/review-code.ts 'this repo'
+```
+
+The loader checks for a `pipeline` export first, then falls back to scanning all named exports for any object with `kind` in `"step" | "sequential" | "pool" | "parallel"`.
+
+If you need finer control after a pipeline is already loaded, you can still call `captain_run` directly.
 
 ## Import Aliases and Barrel Exports
 
@@ -225,9 +248,9 @@ onFail: ({ retryCount }) => retryCount < 2 ? { action: "retry" } : { action: "wa
 ## Loading Pipeline Presets
 
 ```
-captain_load: action="list"
-captain_load: action="load", name="captain:showcase"
-captain_load: action="load", name="./my-pipeline.ts"
+/captain-load               # list all available presets
+/captain captain:showcase "some input"   # load + run a builtin preset
+/captain ./my-pipeline.ts "some input"   # load + run a local pipeline file
 ```
 
 ## Composition Patterns
@@ -295,9 +318,9 @@ merge: (outputs) => outputs.join("\n---\n")
 
 ## Slash Commands
 
-- `/captain` — Interactive pipeline launcher OR show pipeline details
-- `/captain-load [name]` — List available presets (no args) or load a specific preset
-- `/captain-run <name> <input>` — Quick-run a pipeline (supports `--step <label>` for single step)
+- `/captain <file-or-preset> [input]` — **Primary entry point.** Load *and* run a pipeline **or step** in one shot. Accepts a `.ts` pipeline file, a `.ts` step file (any named export with a valid `kind`), or a preset name, plus an optional input string.
+- `/captain-load [name]` — List available presets (no args) or load a specific preset without running it
+- `/captain-run <name> <input>` — Run an already-loaded pipeline (supports `--step <label>` for single step)
 - `/captain-generate <goal>` — Generate a new pipeline using LLM
 - `/captain-step <prompt> [flags]` — Run ad-hoc step with `--model`, `--tools`, `--label` flags
 - `/captain-help` — Show all commands and usage

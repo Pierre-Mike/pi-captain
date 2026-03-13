@@ -13,9 +13,21 @@ import { describeRunnable } from "./core/utils/index.js";
 import { realFs } from "./infra/fs.js";
 import { loadTsPipelineFile } from "./shell/ts-loader.js";
 
+// ── Job Registry ──────────────────────────────────────────────────────────
+
+/** A tracked pipeline execution — background or blocking. */
+export interface CaptainJob {
+	readonly id: number;
+	readonly state: PipelineState;
+	readonly controller: AbortController;
+}
+
 export class CaptainState {
 	pipelines: Record<string, { spec: Runnable }> = {};
-	runningState: PipelineState | null = null;
+
+	/** All tracked jobs (running, completed, failed, cancelled). */
+	jobs: Map<number, CaptainJob> = new Map();
+	private _nextJobId = 1;
 
 	readonly captainDir: string;
 
@@ -25,6 +37,38 @@ export class CaptainState {
 	constructor(captainDir: string, fs: FsPort = realFs) {
 		this.captainDir = captainDir.replace(/\/+$/, "");
 		this.fs = fs;
+	}
+
+	// ── Job Registry ──────────────────────────────────────────────────────
+
+	/** Backward compat: most recent running job's state, or last job overall. */
+	get runningState(): PipelineState | null {
+		const all = [...this.jobs.values()];
+		for (let i = all.length - 1; i >= 0; i--) {
+			if (all[i].state.status === "running") return all[i].state;
+		}
+		return all.at(-1)?.state ?? null;
+	}
+
+	/** Register a new job and assign it an auto-incremented ID. */
+	allocateJob(pipelineState: PipelineState): CaptainJob {
+		const id = this._nextJobId++;
+		const controller = new AbortController();
+		pipelineState.jobId = id;
+		const job: CaptainJob = { id, state: pipelineState, controller };
+		this.jobs.set(id, job);
+		return job;
+	}
+
+	/** Abort a running job. Returns a result string describing the outcome. */
+	killJob(id: number): "killed" | "not-found" | "not-running" {
+		const job = this.jobs.get(id);
+		if (!job) return "not-found";
+		if (job.state.status !== "running") return "not-running";
+		job.controller.abort();
+		job.state.status = "cancelled";
+		job.state.endTime = Date.now();
+		return "killed";
 	}
 
 	// ── Contract File ─────────────────────────────────────────────────────

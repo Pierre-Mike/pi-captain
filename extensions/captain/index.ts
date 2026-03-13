@@ -10,6 +10,7 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { CaptainState } from "./state.js";
 
 import { registerGenerateTool } from "./tools/generate.js";
+import { registerKillTool } from "./tools/kill.js";
 import { registerListTool } from "./tools/list.js";
 import { registerLoadTool } from "./tools/load.js";
 import { registerRunTool } from "./tools/run.js";
@@ -44,6 +45,7 @@ export default function (pi: ExtensionAPI) {
 
 	// ── Register Tools ─────────────────────────────────────────────────────
 	registerGenerateTool(pi, state);
+	registerKillTool(pi, state);
 	registerLoadTool(pi, state);
 	registerRunTool(pi, state, updateWidget, clearWidget);
 	registerStatusTool(pi, state);

@@ -21,8 +21,7 @@ import { buildCompletionText, runPipeline } from "./run-helpers.js";
 
 export type ExecCtx = ExtensionContext;
 
-// ── Interactive guard types & helpers ─────────────────────────────────────
-
+// ── Interactive guard types & helpers ──────────────────────────────────────
 type GuardResult = {
 	done: true;
 	result: { content: TextContent[]; details: undefined };
@@ -107,19 +106,18 @@ async function resolveNameInteractively(
 	return cancelled();
 }
 
-// ── Tool registration ─────────────────────────────────────────────────────
-
+// ── Tool registration ──────────────────────────────────────────────────────
 export function registerRunTool(
 	pi: ExtensionAPI,
 	state: CaptainState,
 	updateWidget: (ctx: ExecCtx, s: PipelineState) => void,
-	clearWidget: (ctx: ExecCtx) => void,
+	clearWidget: (ctx: ExecCtx, s: PipelineState) => void,
 ) {
 	pi.registerTool({
 		name: "captain_run",
 		label: "Captain Run",
 		description:
-			"Execute a defined captain pipeline. Runs steps according to composition rules (sequential/parallel/pool), manages git worktrees for isolation, chains $INPUT/$ORIGINAL through prompts, evaluates gates, handles failures. Returns final output.",
+			"Execute a defined captain pipeline. Runs steps according to composition rules (sequential/parallel/pool), manages git worktrees for isolation, chains $INPUT/$ORIGINAL through prompts, evaluates gates, handles failures. Returns final output. Runs in background (fire-and-forget) by default — pass background=false to wait for completion.",
 		parameters: Type.Object({
 			name: Type.Optional(Type.String({ description: "Pipeline name to run" })),
 			input: Type.Optional(
@@ -128,11 +126,18 @@ export function registerRunTool(
 						"User's original request (becomes $ORIGINAL and initial $INPUT)",
 				}),
 			),
+			background: Type.Optional(
+				Type.Boolean({
+					description:
+						"Fire and forget — return immediately with a job ID. Use captain_kill to stop it, captain_status to check progress. Defaults to true.",
+				}),
+			),
 		}),
 
 		async execute(_id, params, signal, _onUpdate, ctx) {
 			const resolvedInput: string | undefined = params.input;
 			const resolvedName: string = params.name ?? "";
+			const background: boolean = params.background ?? true;
 
 			if (!resolvedName) {
 				const guard = await resolveNameInteractively(
@@ -154,6 +159,7 @@ export function registerRunTool(
 				updateWidget,
 				clearWidget,
 				buildCompletionText,
+				background,
 			);
 		},
 

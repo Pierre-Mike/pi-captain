@@ -13,7 +13,7 @@
 //                    (fallback → re-shred failing units)
 //   5. RESOLVE     → resolver builds dependency graph, topological sort → layers
 //   6. FORMAT      → format layered units into a final task tree
-//   7. EXEC SPEC   → generate an executable captain pipeline JSON spec
+//   7. EXEC SPEC   → generate an executable captain TypeScript pipeline file
 //   8. CANVAS      → render backlog.canvas for Obsidian
 //
 // Preset: captain:shredder (load with: captain_load { action: "load", name: "captain:shredder" })
@@ -54,7 +54,7 @@ export const pipeline: Runnable = {
 		validateUnits, //  4️⃣  VALIDATE  — Flash dry-run (fallback → re-shred)
 		resolveDependencies, //  5️⃣  RESOLVE   — adjacency graph → topo sort → layers
 		formatTree, //  6️⃣  FORMAT    — output final layered task tree
-		generateExecutionSpec, //  7️⃣  EXEC SPEC — task tree → pipeline JSON spec
+		generateExecutionSpec, //  7️⃣  EXEC SPEC — task tree → .pi/pipelines/execution-pipeline.ts
 		renderCanvas, //  8️⃣  CANVAS    — render backlog.canvas for Obsidian
 	],
 };

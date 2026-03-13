@@ -72,9 +72,19 @@ export function registerCommandsA(pi: ExtensionAPI, state: CaptainState): void {
 				currentStepToolCalls: new Map(),
 				startTime: Date.now(),
 			};
-			state.runningState = pipelineState;
+			const job = state.allocateJob(pipelineState);
 			updateWidget(ctx, pipelineState);
-			await runRunnableFromCommand(pi, spec, input, pipelineState, state, ctx);
+			// Fire-and-forget: return immediately so the user can keep chatting.
+			// The widget shows live progress; ctx.ui.notify fires on completion/error.
+			void runRunnableFromCommand(
+				pi,
+				spec,
+				input,
+				pipelineState,
+				job,
+				state,
+				ctx,
+			);
 		},
 	});
 }

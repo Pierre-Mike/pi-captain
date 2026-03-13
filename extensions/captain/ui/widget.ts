@@ -63,21 +63,32 @@ export function renderStepList(
 	return lines;
 }
 
+function widgetKey(state: PipelineState): string {
+	return `captain-${state.jobId ?? 0}`;
+}
+
 export function updateWidget(ctx: ExtensionContext, state: PipelineState) {
-	ctx.ui.setWidget("captain", (_tui, theme) => {
+	ctx.ui.setWidget(widgetKey(state), (_tui, theme) => {
 		const text = new Text("", 0, 1);
 		return {
 			render(width: number): string[] {
 				const elapsed = state.startTime
 					? ((Date.now() - state.startTime) / 1000).toFixed(1)
 					: "0";
-				const headerLabel = `  Captain: ${state.name}`;
+				const jobId = state.jobId !== undefined ? ` #${state.jobId}` : "";
+				const headerLabel = `  Captain: ${state.name}${jobId}`;
+				const killHint =
+					state.jobId !== undefined ? `  /captain-kill ${state.jobId}` : "";
 				const headerRight = `${elapsed}s `;
 				const headerPad = " ".repeat(
-					Math.max(1, width - headerLabel.length - headerRight.length),
+					Math.max(
+						1,
+						width - headerLabel.length - killHint.length - headerRight.length,
+					),
 				);
 				const header =
 					theme.fg("accent", theme.bold(headerLabel)) +
+					theme.fg("dim", killHint) +
 					headerPad +
 					theme.fg("dim", headerRight);
 				const lines: string[] = [
@@ -104,8 +115,9 @@ export function updateWidget(ctx: ExtensionContext, state: PipelineState) {
 	});
 }
 
-export function clearWidget(ctx: ExtensionContext) {
-	setTimeout(() => ctx.ui.setWidget("captain", undefined), 5000);
+export function clearWidget(ctx: ExtensionContext, state: PipelineState) {
+	const key = widgetKey(state);
+	setTimeout(() => ctx.ui.setWidget(key, undefined), 5000);
 }
 
 export { renderStepLines };
