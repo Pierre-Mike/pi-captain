@@ -1,0 +1,297 @@
+{
+  "nodes": [
+    {
+      "id": "c3f7cd0321973a22",
+      "type": "group",
+      "x": -220,
+      "y": 400,
+      "width": 380,
+      "height": 1090,
+      "color": "4",
+      "label": "Layer 0 - Foundation (15 units, parallel)"
+    },
+    {
+      "id": "d5c5ac89e01edfe8",
+      "type": "group",
+      "x": -220,
+      "y": 800,
+      "width": 380,
+      "height": 1090,
+      "color": "4",
+      "label": "Layer 1 - Processing (49 units, parallel)"
+    },
+    {
+      "id": "6179639c19ee1ef4",
+      "type": "group",
+      "x": -220,
+      "y": 1200,
+      "width": 380,
+      "height": 670,
+      "color": "4",
+      "label": "Layer 2 - Synthesis (6 units, parallel)"
+    },
+    {
+      "id": "da44a5256fe24475",
+      "type": "group",
+      "x": -220,
+      "y": 1600,
+      "width": 380,
+      "height": 250,
+      "color": "5",
+      "label": "Layer 3 - Completion (1 unit)"
+    },
+    {
+      "id": "aec1ddc870a6b986",
+      "type": "text",
+      "x": -350,
+      "y": 0,
+      "width": 700,
+      "height": 120,
+      "color": "1",
+      "text": "# Repository Cleanup Task Tree\n\n**Original Requirement:** cleanup this repo\n\n**Total Units:** 71\n**Execution Layers:** 4\n**Cycles Detected:** NO"
+    },
+    {
+      "id": "07b8726c04449100",
+      "type": "text",
+      "x": -200,
+      "y": 430,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-1: removeBuildArtifacts\n\n**Score:** Composite 2\n**Goal:** Remove build directory artifacts\n**Input \u2192 Output:** build directory config \u2192 removal result\n**Deps:** none"
+    },
+    {
+      "id": "dea60c14eb200ff6",
+      "type": "text",
+      "x": -200,
+      "y": 640,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-12A: parseTypeScriptExports\n\n**Score:** Composite 2\n**Goal:** Parse TypeScript export statements\n**Signature:** AnalysisConfig \u2192 ExportParseResult\n**Test:** bun test src/analysis/unused-exports.test.ts\n**Deps:** none"
+    },
+    {
+      "id": "35b3b100cfa66ff5",
+      "type": "text",
+      "x": -200,
+      "y": 850,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-17A: buildFileDependencyGraph\n\n**Score:** Composite 2\n**Goal:** Build file dependency graph\n**Signature:** AnalysisConfig \u2192 DependencyGraphResult\n**Test:** bun test src/analysis/unreferenced-files.test.ts\n**Deps:** none"
+    },
+    {
+      "id": "3928febc9b652f8a",
+      "type": "text",
+      "x": -200,
+      "y": 1060,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-41: formatAllTypeScriptFiles\n\n**Score:** Composite 2\n**Goal:** Format TypeScript files\n**Deps:** none"
+    },
+    {
+      "id": "2d5648363f998f99",
+      "type": "text",
+      "x": -200,
+      "y": 1270,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-52A: analyzeCurrentStructure\n\n**Score:** Composite 2\n**Goal:** Analyze current project structure\n**Signature:** ReadmeConfig \u2192 StructureAnalysisResult\n**Test:** bun test src/documentation/readme-updater.test.ts\n**Deps:** none"
+    },
+    {
+      "id": "9362c00d4e6a7a9b",
+      "type": "text",
+      "x": -200,
+      "y": 830,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-12B: trackExportUsage\n\n**Score:** Composite 2\n**Goal:** Track export usage across codebase\n**Signature:** ExportParseResult & AnalysisConfig \u2192 UsageTrackingResult\n**Test:** bun test src/analysis/unused-exports.test.ts\n**Deps:** UNIT-12A"
+    },
+    {
+      "id": "781d1af62a2ae8a4",
+      "type": "text",
+      "x": -200,
+      "y": 1040,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-17B: identifyGraphOrphans\n\n**Score:** Composite 2\n**Goal:** Identify orphaned files in dependency graph\n**Signature:** DependencyGraphResult \u2192 UnreferencedFilesReport\n**Test:** bun test src/analysis/unreferenced-files.test.ts\n**Deps:** UNIT-17A"
+    },
+    {
+      "id": "00f5ef4add4ff7b5",
+      "type": "text",
+      "x": -200,
+      "y": 1250,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-21B: validateLayerRules\n\n**Score:** Composite 2\n**Goal:** Validate architectural layer rules\n**Signature:** DirectoryScanResult \u2192 LayerValidationReport\n**Test:** bun test src/validation/layer-structure.test.ts\n**Deps:** UNIT-21A"
+    },
+    {
+      "id": "e6fbb93fa2ae36db",
+      "type": "text",
+      "x": -200,
+      "y": 1460,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-42: handleAlreadyFormattedTypeScriptFiles\n\n**Score:** Composite 1\n**Goal:** Skip already formatted files\n**Deps:** UNIT-41"
+    },
+    {
+      "id": "83262ad71258f7f8",
+      "type": "text",
+      "x": -200,
+      "y": 1670,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-52B: updateReadmeSections\n\n**Score:** Composite 2\n**Goal:** Update README sections based on analysis\n**Signature:** StructureAnalysisResult & ReadmeConfig \u2192 ReadmeUpdateReport\n**Test:** bun test src/documentation/readme-updater.test.ts\n**Deps:** UNIT-52A"
+    },
+    {
+      "id": "8cea7c6042860d65",
+      "type": "text",
+      "x": -200,
+      "y": 1230,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-12C: identifyUnusedExports\n\n**Score:** Composite 2\n**Goal:** Identify final list of unused exports\n**Signature:** UsageTrackingResult \u2192 UnusedExportsReport\n**Test:** bun test src/analysis/unused-exports.test.ts\n**Deps:** UNIT-12B"
+    },
+    {
+      "id": "ee5e16c39c78061b",
+      "type": "text",
+      "x": -200,
+      "y": 1440,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-15B: classifyExportUsage\n\n**Score:** Composite 2\n**Goal:** Classify type-only vs runtime usage\n**Signature:** TypeImportResult & UsageTrackingResult \u2192 UnusedExportsReport\n**Test:** bun test src/analysis/unused-exports.test.ts\n**Deps:** UNIT-15A, UNIT-12B"
+    },
+    {
+      "id": "92bbd5ace81d0ae5",
+      "type": "text",
+      "x": -200,
+      "y": 1650,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-18: handleNoUnreferencedFiles\n\n**Score:** Composite 1\n**Goal:** Handle case with no unreferenced files\n**Deps:** UNIT-17B"
+    },
+    {
+      "id": "a53b826b7a86a9d0",
+      "type": "text",
+      "x": -200,
+      "y": 1630,
+      "width": 340,
+      "height": 200,
+      "text": "## UNIT-13: handleNoUnusedExports\n\n**Score:** Composite 1\n**Goal:** Handle case with no unused exports to clean\n**Deps:** UNIT-12C"
+    },
+    {
+      "id": "57df84839072d53b",
+      "type": "text",
+      "x": -350,
+      "y": 2000,
+      "width": 700,
+      "height": 160,
+      "color": "6",
+      "text": "# Execution Summary\n\n**Flow:** Layer 0 \u2192 Layer 1 \u2192 Layer 2 \u2192 Layer 3\n\n**Coverage:** Cleanup operations (15 units), Analysis & processing (49 units), Synthesis (6 units), Completion (1 unit)\n\n**Total Execution Time:** Estimated 4 sequential steps with high parallelization"
+    }
+  ],
+  "edges": [
+    {
+      "id": "ac704b9f824ec3ad",
+      "fromNode": "aec1ddc870a6b986",
+      "fromSide": "bottom",
+      "toNode": "c3f7cd0321973a22",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "starts with"
+    },
+    {
+      "id": "b4bda2acf364ae56",
+      "fromNode": "c3f7cd0321973a22",
+      "fromSide": "bottom",
+      "toNode": "d5c5ac89e01edfe8",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "parallel execution"
+    },
+    {
+      "id": "04a11a56ec68a98b",
+      "fromNode": "d5c5ac89e01edfe8",
+      "fromSide": "bottom",
+      "toNode": "6179639c19ee1ef4",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "synthesis phase"
+    },
+    {
+      "id": "7fdc2482fd77acee",
+      "fromNode": "6179639c19ee1ef4",
+      "fromSide": "bottom",
+      "toNode": "da44a5256fe24475",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "completion"
+    },
+    {
+      "id": "e38fb67a24c690d5",
+      "fromNode": "da44a5256fe24475",
+      "fromSide": "bottom",
+      "toNode": "57df84839072d53b",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "summary"
+    },
+    {
+      "id": "054737c0c1cb00a8",
+      "fromNode": "dea60c14eb200ff6",
+      "fromSide": "bottom",
+      "toNode": "9362c00d4e6a7a9b",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "UNIT-12A \u2192 UNIT-12B",
+      "color": "3"
+    },
+    {
+      "id": "bacfd729755b0638",
+      "fromNode": "35b3b100cfa66ff5",
+      "fromSide": "bottom",
+      "toNode": "781d1af62a2ae8a4",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "UNIT-17A \u2192 UNIT-17B",
+      "color": "3"
+    },
+    {
+      "id": "4b2d427636236b52",
+      "fromNode": "3928febc9b652f8a",
+      "fromSide": "bottom",
+      "toNode": "e6fbb93fa2ae36db",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "UNIT-41 \u2192 UNIT-42",
+      "color": "3"
+    },
+    {
+      "id": "0b3fce69e57fc53d",
+      "fromNode": "2d5648363f998f99",
+      "fromSide": "bottom",
+      "toNode": "83262ad71258f7f8",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "UNIT-52A \u2192 UNIT-52B",
+      "color": "3"
+    },
+    {
+      "id": "fe71c203d2d7c47e",
+      "fromNode": "9362c00d4e6a7a9b",
+      "fromSide": "bottom",
+      "toNode": "8cea7c6042860d65",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "UNIT-12B \u2192 UNIT-12C",
+      "color": "3"
+    },
+    {
+      "id": "d03c56fdac7e1d22",
+      "fromNode": "8cea7c6042860d65",
+      "fromSide": "bottom",
+      "toNode": "a53b826b7a86a9d0",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "UNIT-12C \u2192 UNIT-13",
+      "color": "3"
+    }
+  ]
+}

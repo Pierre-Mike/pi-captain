@@ -36,12 +36,14 @@ async function saveWorktreeOutput(
 	label: string,
 	worktrees: WorktreeEntry[],
 	signal?: AbortSignal,
+	failed = false,
 ): Promise<void> {
 	const committed = await commitWorktreeChanges(
 		exec,
 		wt.worktreePath,
 		label,
 		signal,
+		failed,
 	);
 	if (committed) {
 		const entry = worktrees.find((w) => w.path === wt.worktreePath);
@@ -91,11 +93,36 @@ export async function executeParallel(
 				stepGroup: parGroup,
 				sharedSession: undefined, // each branch needs its own session
 			};
-			const result = await executeRunnable(step, input, original, branchCtx);
-			// Commit any file changes produced by this worker (only on success —
-			// if executeRunnable threw, we never reach this line).
+			let failed = false;
+			let result: Awaited<ReturnType<typeof executeRunnable>>;
+			try {
+				result = await executeRunnable(step, input, original, branchCtx);
+				// Mark as failed if any step result has failed status
+				failed = result.results.some((r) => r.status === "failed");
+			} catch (err) {
+				failed = true;
+				// Re-commit partial work before re-throwing so files are recoverable
+				if (wt)
+					await saveWorktreeOutput(
+						ectx.exec,
+						wt,
+						label,
+						worktrees,
+						undefined,
+						true,
+					);
+				throw err;
+			}
+			// Commit on both success and failure — failed branches keep their files
 			if (wt)
-				await saveWorktreeOutput(ectx.exec, wt, label, worktrees, ectx.signal);
+				await saveWorktreeOutput(
+					ectx.exec,
+					wt,
+					label,
+					worktrees,
+					ectx.signal,
+					failed,
+				);
 			return result;
 		});
 

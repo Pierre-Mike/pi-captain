@@ -36,12 +36,14 @@ async function saveWorktreeOutput(
 	label: string,
 	worktrees: WorktreeEntry[],
 	signal?: AbortSignal,
+	failed = false,
 ): Promise<void> {
 	const committed = await commitWorktreeChanges(
 		exec,
 		wt.worktreePath,
 		label,
 		signal,
+		failed,
 	);
 	if (committed) {
 		const entry = worktrees.find((w) => w.path === wt.worktreePath);
@@ -98,16 +100,38 @@ export async function executePool(
 				pool.count > 1 && pool.step.kind === "step"
 					? { ...pool.step, label: `${pool.step.label} [${i + 1}]` }
 					: pool.step;
-			const result = await executeRunnable(
-				taggedStep,
-				`${input}\n[Branch ${i + 1} of ${pool.count}]`,
-				original,
-				branchCtx,
-			);
-			// Commit any file changes produced by this worker (only on success —
-			// if executeRunnable threw, we never reach this line).
+			let failed = false;
+			let result: Awaited<ReturnType<typeof executeRunnable>>;
+			try {
+				result = await executeRunnable(
+					taggedStep,
+					`${input}\n[Branch ${i + 1} of ${pool.count}]`,
+					original,
+					branchCtx,
+				);
+				failed = result.results.some((r) => r.status === "failed");
+			} catch (err) {
+				failed = true;
+				if (wt)
+					await saveWorktreeOutput(
+						ectx.exec,
+						wt,
+						label,
+						worktrees,
+						undefined,
+						true,
+					);
+				throw err;
+			}
 			if (wt)
-				await saveWorktreeOutput(ectx.exec, wt, label, worktrees, ectx.signal);
+				await saveWorktreeOutput(
+					ectx.exec,
+					wt,
+					label,
+					worktrees,
+					ectx.signal,
+					failed,
+				);
 			return result;
 		});
 

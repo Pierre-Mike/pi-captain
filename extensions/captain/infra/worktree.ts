@@ -89,13 +89,14 @@ export async function createWorktree(
 /**
  * Commit all changes in a worktree if there are any.
  * Returns true if a commit was made, false if the worktree was clean.
- * Should only be called after a worker succeeds — never on crash.
+ * Pass failed=true to mark the commit as a failed-step recovery snapshot.
  */
 export async function commitWorktreeChanges(
 	exec: ExecFn,
 	worktreePath: string,
 	label: string,
 	signal?: AbortSignal,
+	failed = false,
 ): Promise<boolean> {
 	try {
 		const { stdout } = await exec(
@@ -106,11 +107,10 @@ export async function commitWorktreeChanges(
 		if (!stdout.trim()) return false; // nothing to commit
 
 		await exec("git", ["-C", worktreePath, "add", "-A"], { signal });
-		await exec(
-			"git",
-			["-C", worktreePath, "commit", "-m", `captain: ${label} output`],
-			{ signal },
-		);
+		const msg = failed
+			? `captain: ${label} output [FAILED — recover from this branch]`
+			: `captain: ${label} output`;
+		await exec("git", ["-C", worktreePath, "commit", "-m", msg], { signal });
 		return true;
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : String(err);
