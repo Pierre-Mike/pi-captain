@@ -128,11 +128,24 @@ export async function executeParallel(
 
 		const settled = await Promise.allSettled(promises);
 		const outputs: string[] = [];
-		for (const r of settled) {
+		for (const [i, r] of settled.entries()) {
 			if (r.status === "fulfilled") {
 				outputs.push(r.value.output);
 				allResults.push(...r.value.results);
-			} else outputs.push(`(error: ${r.reason})`);
+			} else {
+				const reason =
+					r.reason instanceof Error ? r.reason.message : String(r.reason);
+				const label = getLabel(par.steps[i] ?? par.steps[0]) || `parallel-${i}`;
+				outputs.push(`(error: ${reason})`);
+				allResults.push({
+					label,
+					status: "failed",
+					output: "",
+					error: reason,
+					elapsed: 0,
+					group: `parallel ×${par.steps.length}`,
+				});
+			}
 		}
 
 		const mctx: MergeCtx = {

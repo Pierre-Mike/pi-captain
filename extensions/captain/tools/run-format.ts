@@ -1,6 +1,8 @@
-// ── tools/run-format.ts — Output formatting and step hook builders ──────────
+// ── tools/run-format.ts — Output formatting, step hook builders, and logging ──
 // Extracted from run-helpers.ts to stay within 200-line limit.
 
+import { appendFileSync, mkdirSync } from "node:fs";
+import * as path from "node:path";
 import * as piSdk from "@mariozechner/pi-coding-agent";
 import type { PipelineState, StepResult } from "../core/types.js";
 import type { ExecutorContext } from "../shell/executor.js";
@@ -38,6 +40,42 @@ export function makeStepHooks(
 			updateWidget(ctx, pipelineState);
 		},
 	};
+}
+
+// ── Pipeline log writer ───────────────────────────────────────────────────
+/** Write a structured log for every pipeline run to .pi/logs/<ts>-<name>.log */
+export function writePipelineLog(cwd: string, state: PipelineState): void {
+	try {
+		const logDir = path.join(cwd, ".pi", "logs");
+		mkdirSync(logDir, { recursive: true });
+		const ts = new Date().toISOString().replace(/[:.]/g, "-");
+		const logPath = path.join(logDir, `${ts}-${state.name}.log`);
+		const lines: string[] = [
+			`Pipeline: ${state.name}  status: ${state.status}`,
+			`Job #${state.jobId ?? "?"}`,
+			`Started: ${state.startTime ? new Date(state.startTime).toISOString() : "?"}`,
+			`Ended:   ${state.endTime ? new Date(state.endTime).toISOString() : "?"}`,
+			"",
+			"── Steps ──",
+		];
+		for (const r of state.results) {
+			const gate = r.gateResult
+				? ` [gate: ${r.gateResult.passed ? "pass" : `FAIL — ${r.gateResult.reason}`}]`
+				: "";
+			lines.push(
+				`${r.status.padEnd(8)} ${r.label} (${(r.elapsed / 1000).toFixed(1)}s)${gate}`,
+			);
+			if (r.error) lines.push(`         error: ${r.error}`);
+			if (r.output.trim()) lines.push(`         output:\n${r.output.trim()}\n`);
+		}
+		if (state.finalOutput)
+			lines.push("", "── Final Output ──", state.finalOutput);
+		appendFileSync(logPath, `${lines.join("\n")}\n`);
+		// biome-ignore lint/suspicious/noConsole: intentional — surface log path in terminal
+		console.error(`[captain] log: ${logPath}`);
+	} catch {
+		/* best-effort — never crash the pipeline over logging */
+	}
 }
 
 // ── Output formatter ─────────────────────────────────────────────────────

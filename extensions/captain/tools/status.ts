@@ -8,12 +8,23 @@ import type { CaptainState } from "../state.js";
 
 // ── Formatting helpers ─────────────────────────────────────────────────────
 
-function stepLine(r: StepResult): string {
+const OUTPUT_PREVIEW_CHARS = 600;
+
+function stepLines(r: StepResult): string[] {
 	const gate = r.gateResult
-		? ` [gate: ${r.gateResult.passed ? "pass" : "fail"}]`
+		? ` [gate: ${r.gateResult.passed ? "pass" : `FAIL — ${r.gateResult.reason}`}]`
 		: "";
 	const err = r.error ? ` — ${r.error}` : "";
-	return `${statusIcon(r.status)} ${r.label}: ${r.status} (${(r.elapsed / 1000).toFixed(1)}s)${gate}${err}`;
+	const header = `${statusIcon(r.status)} ${r.label}: ${r.status} (${(r.elapsed / 1000).toFixed(1)}s)${gate}${err}`;
+
+	// For failed/skipped steps, show what the agent actually produced
+	if ((r.status === "failed" || r.status === "skipped") && r.output.trim()) {
+		const preview = r.output.trim().slice(0, OUTPUT_PREVIEW_CHARS);
+		const truncated =
+			r.output.trim().length > OUTPUT_PREVIEW_CHARS ? "…(truncated)" : "";
+		return [header, `    └─ output: ${preview}${truncated}`];
+	}
+	return [header];
 }
 
 function buildStatusLines(s: PipelineState): string[] {
@@ -28,7 +39,7 @@ function buildStatusLines(s: PipelineState): string[] {
 		s.endTime ? `Ended: ${new Date(s.endTime).toISOString()}${elapsed}` : "",
 		"",
 		"── Steps ──",
-		...s.results.map(stepLine),
+		...s.results.flatMap(stepLines),
 	].filter(Boolean);
 
 	if (s.finalOutput) {

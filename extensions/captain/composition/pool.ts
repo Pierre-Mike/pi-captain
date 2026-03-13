@@ -28,8 +28,6 @@ function getLabel(r: Runnable): string {
 }
 
 type WorktreeEntry = { path: string; branch: string; keep?: boolean };
-
-/** Commit worker output and mark the branch for preservation if files changed. */
 async function saveWorktreeOutput(
 	exec: Parameters<typeof commitWorktreeChanges>[0],
 	wt: { worktreePath: string; branchName: string },
@@ -51,10 +49,7 @@ async function saveWorktreeOutput(
 	}
 }
 
-/**
- * Execute a pool pipeline with git worktree isolation.
- * Runs the same step N times in parallel, each in its own git worktree.
- */
+/** Execute a pool pipeline with git worktree isolation — same step N times in parallel. */
 export async function executePool(
 	pool: Pool,
 	input: string,
@@ -137,11 +132,24 @@ export async function executePool(
 
 		const settled = await Promise.allSettled(promises);
 		const outputs: string[] = [];
-		for (const r of settled) {
+		for (const [i, r] of settled.entries()) {
 			if (r.status === "fulfilled") {
 				outputs.push(r.value.output);
 				allResults.push(...r.value.results);
-			} else outputs.push(`(error: ${r.reason})`);
+			} else {
+				const reason =
+					r.reason instanceof Error ? r.reason.message : String(r.reason);
+				const label = `${getLabel(pool.step) || "pool"} [${i + 1}]`;
+				outputs.push(`(error: ${reason})`);
+				allResults.push({
+					label,
+					status: "failed",
+					output: "",
+					error: reason,
+					elapsed: 0,
+					group: `pool ×${pool.count}: ${getLabel(pool.step) || "step"}`,
+				});
+			}
 		}
 
 		const mctx: MergeCtx = {

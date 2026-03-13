@@ -10,11 +10,10 @@ import type { ExecutorContext } from "../shell/executor.js";
 import { executeRunnable } from "../shell/executor.js";
 import type { CaptainState } from "../state.js";
 import { text } from "./helpers.js";
-import { makeStepHooks } from "./run-format.js";
+import { makeStepHooks, writePipelineLog } from "./run-format.js";
 
 export type ExecCtx = ExtensionContext;
 export { buildCompletionText } from "./run-format.js";
-/** Assemble the ExecutorContext for a pipeline run. */
 export function buildEctx(
 	pi: ExtensionAPI,
 	pipelineState: PipelineState,
@@ -38,7 +37,6 @@ export function buildEctx(
 		...makeStepHooks(pipelineState, ctx, updateWidget),
 	};
 }
-/** Merge two optional signals: aborts when either fires. */
 function mergeSignals(
 	a: AbortSignal | undefined,
 	b: AbortSignal | undefined,
@@ -48,7 +46,6 @@ function mergeSignals(
 	if (!b) return a;
 	return AbortSignal.any([a, b]);
 }
-/** Run a pipeline (blocking or background fire-and-forget). */
 export async function runPipeline(
 	pi: ExtensionAPI,
 	state: CaptainState,
@@ -96,7 +93,6 @@ export async function runPipeline(
 
 	if (!ctx.model)
 		return { content: [text("Error: no model available")], details: undefined };
-
 	const apiKey = await ctx.modelRegistry.getApiKey(ctx.model);
 	if (!apiKey)
 		return {
@@ -127,12 +123,14 @@ export async function runPipeline(
 					pipelineState.results = results;
 				}
 				pipelineState.endTime = Date.now();
+				writePipelineLog(ctx.cwd, pipelineState);
 				clearWidget(ctx, pipelineState);
 			})
 			.catch(() => {
 				if (pipelineState.status !== "cancelled")
 					pipelineState.status = "failed";
 				pipelineState.endTime = Date.now();
+				writePipelineLog(ctx.cwd, pipelineState);
 				clearWidget(ctx, pipelineState);
 			});
 
@@ -166,6 +164,7 @@ export async function runPipeline(
 		pipelineState.finalOutput = output;
 		pipelineState.endTime = Date.now();
 		pipelineState.results = results;
+		writePipelineLog(ctx.cwd, pipelineState);
 		clearWidget(ctx, pipelineState);
 		return {
 			content: [
@@ -185,6 +184,7 @@ export async function runPipeline(
 		const wasCancelled = pipelineState.status === "cancelled";
 		if (!wasCancelled) pipelineState.status = "failed";
 		pipelineState.endTime = Date.now();
+		writePipelineLog(ctx.cwd, pipelineState);
 		clearWidget(ctx, pipelineState);
 		return {
 			content: [
